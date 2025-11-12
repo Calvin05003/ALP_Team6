@@ -18,7 +18,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.4'
 
       # 3️⃣ Setup Node.js (for npm build)
       - name: Setup Node.js
@@ -52,7 +52,7 @@ jobs:
         run: |
           scp -o StrictHostKeyChecking=no deploy.zip ${{ secrets.TEAM6_USER }}@${{ secrets.TEAM6_HOST }}:/home/${{ secrets.TEAM6_USER }}/deploy.zip
           ssh -o StrictHostKeyChecking=no ${{ secrets.TEAM6_USER }}@${{ secrets.TEAM6_HOST }} "
-            cd /home/${{ secrets.TEAM6_USER }}/web/calvin.team6.my.id/public_html &&
+            cd /home/${{ secrets.TEAM6_USER }}/web/team6.my.id/public_html &&
             unzip -o /home/${{ secrets.TEAM6_USER }}/deploy.zip &&
             rm /home/${{ secrets.TEAM6_USER }}/deploy.zip &&
             php artisan optimize
