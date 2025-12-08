@@ -180,38 +180,112 @@ class CvController extends Controller
 
     /**
      * Helper untuk ekstrak text dari file upload.
-     * Pastikan library yang diperlukan sudah terinstall (contoh: smalot/pdfparser, phpoffice/phpword)
+     * Mendukung: TXT, PDF, DOC, DOCX.
      */
     protected function extractTextFromUploadedFile(UploadedFile $file): ?string
     {
         $extension = strtolower($file->getClientOriginalExtension());
         $filePath = $file->getRealPath();
 
-        if ($extension === 'txt') {
-            return file_get_contents($filePath);
-        }
+        try {
+            $text = '';
 
-        if ($extension === 'pdf') {
-            // TODO: Implementasi ekstraksi PDF, contoh menggunakan smalot/pdfparser:
-            /*
-            try {
-                $parser = new \Smalot\PdfParser\Parser();
+            // 1) TXT – paling simpel
+            if ($extension === 'txt') {
+                $text = file_get_contents($filePath) ?: '';
+            }
+
+            // 2) PDF – pakai smalot/pdfparser
+            elseif ($extension === 'pdf') {
+                $parser = new PdfParser();
                 $pdf = $parser->parseFile($filePath);
-                return $pdf->getText();
-            } catch (\Exception $e) {
-                \Log::error('PDF extraction failed: ' . $e->getMessage());
+                $text = $pdf->getText() ?? '';
+            }
+
+            // 3) DOCX – pakai PhpOffice\PhpWord
+            elseif ($extension === 'docx') {
+                $phpWord = WordIOFactory::load($filePath, 'Word2007');
+                $text = $this->extractTextFromPhpWord($phpWord);
+            }
+
+            // 4) DOC (format lama)
+            elseif ($extension === 'doc') {
+                // MsDoc reader (bisa gagal untuk beberapa dokumen lama, tapi ini best effort)
+                $phpWord = WordIOFactory::load($filePath, 'MsDoc');
+                $text = $this->extractTextFromPhpWord($phpWord);
+            }
+
+            // Format lain tidak didukung
+            else {
                 return null;
             }
-            */
-            // Sementara kembalikan pesan agar tidak terjadi crash saat dipanggil
-            return "!!! EKSTRAKSI PDF BELUM DIIMPLEMENTASIKAN. Tolong masukkan teks CV secara manual atau install library yang diperlukan. Path File: " . $filePath;
+
+            // Bersihkan & normalisasi teks
+            $text = $this->normalizeCvText($text);
+
+            // Kalau setelah dibersihkan masih kosong, anggap gagal
+            if (trim($text) === '') {
+                return null;
+            }
+
+            return $text;
+        } catch (\Throwable $e) {
+            \Log::error('CV text extraction failed', [
+                'extension' => $extension,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Ekstrak teks dari objek PhpWord (DOC/DOCX).
+     */
+    protected function extractTextFromPhpWord($phpWord): string
+    {
+        $text = '';
+
+        foreach ($phpWord->getSections() as $section) {
+            foreach ($section->getElements() as $element) {
+                // Banyak elemen (TextRun, Text, ListItem, dsb.)
+                if (method_exists($element, 'getText')) {
+                    $text .= $element->getText() . "\n";
+                } elseif (method_exists($element, 'getElements')) {
+                    foreach ($element->getElements() as $child) {
+                        if (method_exists($child, 'getText')) {
+                            $text .= $child->getText() . "\n";
+                        }
+                    }
+                }
+            }
         }
 
-        if (in_array($extension, ['doc', 'docx'])) {
-            // TODO: Implementasi ekstraksi DOC/DOCX
-            return "!!! EKSTRAKSI DOC/DOCX BELUM DIIMPLEMENTASIKAN. Tolong masukkan teks CV secara manual atau install library yang diperlukan. Path File: " . $filePath;
+        return $text;
+    }
+
+    /**
+     * Normalisasi teks CV supaya lebih bersih sebelum dikirim ke AI.
+     */
+    protected function normalizeCvText(string $text): string
+    {
+        // Pastikan encoding UTF-8
+        if (!mb_detect_encoding($text, 'UTF-8', true)) {
+            $text = mb_convert_encoding($text, 'UTF-8');
         }
 
-        return null;
+        // Hapus karakter kontrol aneh
+        $text = preg_replace('/[^\PC\s]/u', '', $text);
+
+        // Samakan line break
+        $text = preg_replace("/\r\n|\r/", "\n", $text);
+
+        // Hapus spasi/tab berlebihan
+        $text = preg_replace("/[ \t]+/", ' ', $text);
+
+        // Maksimal 2 newline berturut-turut
+        $text = preg_replace("/\n{3,}/", "\n\n", $text);
+
+        return trim($text);
     }
 }
