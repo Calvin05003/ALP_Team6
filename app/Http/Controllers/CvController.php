@@ -25,37 +25,46 @@ class CvController extends Controller
     }
 
     public function store(Request $request)
-    {
-        // 1. Validasi input
-        $request->validate([
-            'input_mode' => 'required|in:file,manual',
-            'cv_file' => 'required_if:input_mode,file|file|mimes:pdf,doc,docx,txt|max:5120',
-            'cv_text' => 'required_if:input_mode,manual|string',
-        ]);
+{
+    // Susun rules dasar
+    $rules = [
+        'input_mode' => 'required|in:file,manual',
+        'cv_file'    => 'required_if:input_mode,file|file|mimes:pdf,doc,docx,txt|max:5120',
+    ];
 
-        $inputMode = $request->input('input_mode');
+    // Kalau mode manual, baru validasi cv_text
+    if ($request->input('input_mode') === 'manual') {
+        $rules['cv_text'] = 'required|string';
+    }
 
-        $originalFilename = null;
-        $storedPath = null;
-        $extractedText = null;
+    // Jalankan validasi
+    $validated = $request->validate($rules);
 
-        // 2. Ambil teks CV berdasarkan mode input
-        if ($inputMode === 'file' && $request->hasFile('cv_file')) {
-            /** @var UploadedFile $file */
-            $file = $request->file('cv_file');
+    $inputMode = $validated['input_mode'];
 
-            $originalFilename = $file->getClientOriginalName();
-            // Simpan di storage/app/public/cv
-            $storedPath = $file->store('cv', 'public');
+    $originalFilename = null;
+    $storedPath       = null;
+    $extractedText    = null;
 
-            // Panggil helper untuk ekstraksi teks
-            $extractedText = $this->extractTextFromUploadedFile($file);
-        } else {
-            // input manual
-            $originalFilename = 'manual-input-' . now()->timestamp . '.txt';
-            $storedPath = null;
-            $extractedText = $request->input('cv_text');
-        }
+    // 2. Ambil teks CV berdasarkan mode input
+    if ($inputMode === 'file' && $request->hasFile('cv_file')) {
+        /** @var UploadedFile $file */
+        $file = $request->file('cv_file');
+
+        $originalFilename = $file->getClientOriginalName();
+        // Simpan di storage/app/public/cv
+        $storedPath = $file->store('cv', 'public');
+
+        // Panggil helper untuk ekstraksi teks (PDF/DOC/DOCX/TXT)
+        $extractedText = $this->extractTextFromUploadedFile($file);
+    } else {
+        // input manual
+        $originalFilename = 'manual-input-' . now()->timestamp . '.txt';
+        $storedPath       = null;
+        $extractedText    = $validated['cv_text'];
+    }
+
+    // ... sisanya (safety fallback, simpan CvSubmission, panggil AI, dll) tetap sama
 
         // Safety fallback - pastikan teks ada
         if (empty($extractedText)) {
