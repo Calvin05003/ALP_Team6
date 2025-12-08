@@ -7,6 +7,8 @@ use App\Models\CvSubmission;
 use App\Services\CvAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Smalot\PdfParser\Parser as PdfParser;
+use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 
 class CvController extends Controller
 {
@@ -46,6 +48,7 @@ class CvController extends Controller
             // Simpan di storage/app/public/cv
             $storedPath = $file->store('cv', 'public');
 
+            // Panggil helper untuk ekstraksi teks
             $extractedText = $this->extractTextFromUploadedFile($file);
         } else {
             // input manual
@@ -54,10 +57,10 @@ class CvController extends Controller
             $extractedText = $request->input('cv_text');
         }
 
-        // Safety fallback
+        // Safety fallback - pastikan teks ada
         if (empty($extractedText)) {
             return back()
-                ->withErrors(['cv_file' => 'Gagal membaca isi CV. Pastikan format file benar atau isi teks secara manual.'])
+                ->withErrors(['cv_file' => 'Gagal membaca isi CV. Pastikan format file benar atau implementasi text extractor di controller belum lengkap.'])
                 ->withInput();
         }
 
@@ -74,6 +77,7 @@ class CvController extends Controller
         try {
             $result = $this->cvAnalysisService->analyze($extractedText);
         } catch (\Throwable $e) {
+            // Pesan error dari Gemini/cURL akan lebih jelas berkat perbaikan di service
             return back()
                 ->withErrors(['ai' => 'Terjadi kesalahan saat memproses CV di AI: ' . $e->getMessage()])
                 ->withInput();
@@ -83,16 +87,16 @@ class CvController extends Controller
          * Normalisasi hasil dari service supaya punya struktur yang konsisten:
          *
          * Kita HARUS mengisi key:
-         * - resume_score            → int
-         * - main_skills             → array of string
-         * - division_recommendations→ array of { division_name, reason }
-         * - readiness_scores        → array of { division_name, score }
-         * - skill_gaps              → array of { division_name, missing_skills[] }
-         * - feedback                → string (boleh gabungan beberapa poin)
+         * - resume_score
+         * - main_skills
+         * - division_recommendations
+         * - readiness_scores
+         * - skill_gaps
+         * - feedback
          */
 
         // Kalau service sudah mengembalikan langsung struktur ini, tinggal pakai.
-// Tapi kalau dia pakai wrapper seperti ["analysis" => [...]], kita tangani.
+        // Tapi kalau dia pakai wrapper seperti ["analysis" => [...]
         if (isset($result['analysis']) && is_array($result['analysis'])) {
             $analysisRaw = $result['analysis'];
 
@@ -176,21 +180,38 @@ class CvController extends Controller
 
     /**
      * Helper untuk ekstrak text dari file upload.
-     * Di sini kamu bisa integrasi library PDF/DOCX sesuai kebutuhan.
+     * Pastikan library yang diperlukan sudah terinstall (contoh: smalot/pdfparser, phpoffice/phpword)
      */
     protected function extractTextFromUploadedFile(UploadedFile $file): ?string
     {
         $extension = strtolower($file->getClientOriginalExtension());
+        $filePath = $file->getRealPath();
 
-        // Contoh sederhana:
         if ($extension === 'txt') {
-            return file_get_contents($file->getRealPath());
+            return file_get_contents($filePath);
         }
 
-        // TODO:
-        // - Untuk PDF: pakai library seperti smalot/pdfparser atau spatie/pdf-to-text
-        // - Untuk DOC/DOCX: pakai PhpOffice\PhpWord atau library serupa
-        // Sementara, return null dulu kalau belum diimplementasi
+        if ($extension === 'pdf') {
+            // TODO: Implementasi ekstraksi PDF, contoh menggunakan smalot/pdfparser:
+            /*
+            try {
+                $parser = new \Smalot\PdfParser\Parser();
+                $pdf = $parser->parseFile($filePath);
+                return $pdf->getText();
+            } catch (\Exception $e) {
+                \Log::error('PDF extraction failed: ' . $e->getMessage());
+                return null;
+            }
+            */
+            // Sementara kembalikan pesan agar tidak terjadi crash saat dipanggil
+            return "!!! EKSTRAKSI PDF BELUM DIIMPLEMENTASIKAN. Tolong masukkan teks CV secara manual atau install library yang diperlukan. Path File: " . $filePath;
+        }
+
+        if (in_array($extension, ['doc', 'docx'])) {
+            // TODO: Implementasi ekstraksi DOC/DOCX
+            return "!!! EKSTRAKSI DOC/DOCX BELUM DIIMPLEMENTASIKAN. Tolong masukkan teks CV secara manual atau install library yang diperlukan. Path File: " . $filePath;
+        }
+
         return null;
     }
 }
