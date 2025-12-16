@@ -26,6 +26,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/cv', [CvController::class, 'create'])->name('cv.create');
     Route::post('/cv', [CvController::class, 'store'])->name('cv.store');
     Route::get('/cv/{id}/result', [CvController::class, 'result'])->name('cv.result');
+    Route::get('/cv/history', [CvController::class, 'history'])
+    ->name('cv.history')
+    ->middleware('auth');
+
+    Route::get('/cv/{id}/compare', [CvController::class, 'compareForm'])
+    ->name('cv.compare.form')
+    ->middleware('auth');
+
+    Route::post('/cv/compare', [CvController::class, 'compare'])
+    ->name('cv.compare')
+    ->middleware('auth');
+
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
