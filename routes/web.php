@@ -38,6 +38,11 @@ Route::middleware('auth')->group(function () {
     ->name('cv.compare')
     ->middleware('auth');
 
+    Route::delete('/cv/{analysis}/history', [CvController::class, 'destroyHistory'])
+    ->name('cv.history.delete')
+    ->middleware('auth');
+
+
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

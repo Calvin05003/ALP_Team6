@@ -337,4 +337,21 @@ class CvController extends Controller
     return view('cv.compare-result', compact('a', 'b'));
     }
 
+    public function destroyHistory(CvAnalysis $analysis)
+    {
+    // pastikan CV ini milik user yang login
+    abort_if(
+        $analysis->cvSubmission->user_id !== auth()->id(),
+        403
+    );
+
+    // hapus submission → analysis ikut terhapus (cascade)
+    $analysis->cvSubmission->delete();
+
+    return redirect()
+        ->route('cv.history')
+        ->with('success', 'Riwayat CV berhasil dihapus.');
+    }
+
+
 }
