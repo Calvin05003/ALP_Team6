@@ -297,4 +297,61 @@ class CvController extends Controller
 
         return trim($text);
     }
+    public function history()
+    {
+    $histories = CvAnalysis::with('cvSubmission')
+        ->whereHas('cvSubmission', function ($q) {
+            $q->where('user_id', auth()->id());
+        })
+        ->latest()
+        ->get();
+
+    return view('cv.history', compact('histories'));
+    }
+
+    public function compareForm($id)
+    {
+    $current = CvAnalysis::with('cvSubmission')->findOrFail($id);
+
+    $histories = CvAnalysis::with('cvSubmission')
+        ->whereHas('cvSubmission', fn($q) =>
+            $q->where('user_id', auth()->id())
+        )
+        ->where('id', '!=', $id)
+        ->latest()
+        ->get();
+
+    return view('cv.compare', compact('current', 'histories'));
+    }
+
+    public function compare(Request $request)
+    {
+    $request->validate([
+        'cv_a' => 'required|exists:cv_analyses,id',
+        'cv_b' => 'required|exists:cv_analyses,id',
+    ]);
+
+    $a = CvAnalysis::with('cvSubmission')->findOrFail($request->cv_a);
+    $b = CvAnalysis::with('cvSubmission')->findOrFail($request->cv_b);
+
+    return view('cv.compare-result', compact('a', 'b'));
+    }
+
+    public function destroyHistory(CvAnalysis $analysis)
+    {
+    // pastikan CV ini milik user yang login
+    abort_if(
+        $analysis->cvSubmission->user_id !== auth()->id(),
+        403
+    );
+
+    // hapus submission → analysis ikut terhapus (cascade)
+    $analysis->cvSubmission->delete();
+
+    return redirect()
+        ->route('cv.history')
+        ->with('success', 'Riwayat CV berhasil dihapus.');
+    }
+
+
 }
