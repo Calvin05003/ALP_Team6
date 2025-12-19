@@ -7,6 +7,8 @@ use App\Models\CvSubmission;
 use App\Services\CvAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth; // [FIX] Tambahkan ini untuk Auth::id()
+use Illuminate\Support\Facades\Log;  // [FIX] Tambahkan ini untuk Log::error()
 use Smalot\PdfParser\Parser as PdfParser;
 use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 
@@ -25,46 +27,44 @@ class CvController extends Controller
     }
 
     public function store(Request $request)
-{
-    // Susun rules dasar
-    $rules = [
-        'input_mode' => 'required|in:file,manual',
-        'cv_file'    => 'required_if:input_mode,file|file|mimes:pdf,doc,docx,txt|max:5120',
-    ];
+    {
+        // Susun rules dasar
+        $rules = [
+            'input_mode' => 'required|in:file,manual',
+            'cv_file'    => 'required_if:input_mode,file|file|mimes:pdf,doc,docx,txt|max:5120',
+        ];
 
-    // Kalau mode manual, baru validasi cv_text
-    if ($request->input('input_mode') === 'manual') {
-        $rules['cv_text'] = 'required|string';
-    }
+        // Kalau mode manual, baru validasi cv_text
+        if ($request->input('input_mode') === 'manual') {
+            $rules['cv_text'] = 'required|string';
+        }
 
-    // Jalankan validasi
-    $validated = $request->validate($rules);
+        // Jalankan validasi
+        $validated = $request->validate($rules);
 
-    $inputMode = $validated['input_mode'];
+        $inputMode = $validated['input_mode'];
 
-    $originalFilename = null;
-    $storedPath       = null;
-    $extractedText    = null;
-
-    // 2. Ambil teks CV berdasarkan mode input
-    if ($inputMode === 'file' && $request->hasFile('cv_file')) {
-        /** @var UploadedFile $file */
-        $file = $request->file('cv_file');
-
-        $originalFilename = $file->getClientOriginalName();
-        // Simpan di storage/app/public/cv
-        $storedPath = $file->store('cv', 'public');
-
-        // Panggil helper untuk ekstraksi teks (PDF/DOC/DOCX/TXT)
-        $extractedText = $this->extractTextFromUploadedFile($file);
-    } else {
-        // input manual
-        $originalFilename = 'manual-input-' . now()->timestamp . '.txt';
+        $originalFilename = null;
         $storedPath       = null;
-        $extractedText    = $validated['cv_text'];
-    }
+        $extractedText    = null;
 
-    // ... sisanya (safety fallback, simpan CvSubmission, panggil AI, dll) tetap sama
+        // 2. Ambil teks CV berdasarkan mode input
+        if ($inputMode === 'file' && $request->hasFile('cv_file')) {
+            /** @var UploadedFile $file */
+            $file = $request->file('cv_file');
+
+            $originalFilename = $file->getClientOriginalName();
+            // Simpan di storage/app/public/cv
+            $storedPath = $file->store('cv', 'public');
+
+            // Panggil helper untuk ekstraksi teks (PDF/DOC/DOCX/TXT)
+            $extractedText = $this->extractTextFromUploadedFile($file);
+        } else {
+            // input manual
+            $originalFilename = 'manual-input-' . now()->timestamp . '.txt';
+            $storedPath       = null;
+            $extractedText    = $validated['cv_text'];
+        }
 
         // Safety fallback - pastikan teks ada
         if (empty($extractedText)) {
@@ -75,7 +75,7 @@ class CvController extends Controller
 
         // 3. Simpan ke tabel cv_submissions
         $cvSubmission = CvSubmission::create([
-            'user_id' => auth()->id(), // boleh null kalau belum pakai auth
+            'user_id' => Auth::id(), // [FIX Line 78] Menggunakan Facade Auth
             'original_filename' => $originalFilename,
             'stored_path' => $storedPath,
             'extracted_text' => $extractedText,
@@ -86,26 +86,14 @@ class CvController extends Controller
         try {
             $result = $this->cvAnalysisService->analyze($extractedText);
         } catch (\Throwable $e) {
-            // Pesan error dari Gemini/cURL akan lebih jelas berkat perbaikan di service
             return back()
                 ->withErrors(['ai' => 'Terjadi kesalahan saat memproses CV di AI: ' . $e->getMessage()])
                 ->withInput();
         }
 
         /**
-         * Normalisasi hasil dari service supaya punya struktur yang konsisten:
-         *
-         * Kita HARUS mengisi key:
-         * - resume_score
-         * - main_skills
-         * - division_recommendations
-         * - readiness_scores
-         * - skill_gaps
-         * - feedback
+         * Normalisasi hasil dari service
          */
-
-        // Kalau service sudah mengembalikan langsung struktur ini, tinggal pakai.
-        // Tapi kalau dia pakai wrapper seperti ["analysis" => [...]
         if (isset($result['analysis']) && is_array($result['analysis'])) {
             $analysisRaw = $result['analysis'];
 
@@ -118,7 +106,6 @@ class CvController extends Controller
                 'feedback' => '',
             ];
 
-            // mapping division_matches → 3 field terpisah
             if (!empty($analysisRaw['division_matches']) && is_array($analysisRaw['division_matches'])) {
                 foreach ($analysisRaw['division_matches'] as $match) {
                     $divisionName = $match['division_name'] ?? 'Unknown';
@@ -140,20 +127,17 @@ class CvController extends Controller
                 }
             }
 
-            // gabungkan feedback jadi satu string panjang yang enak dibaca
             if (!empty($analysisRaw['feedback']) && is_array($analysisRaw['feedback'])) {
                 $feedbackParts = [];
-
                 foreach ($analysisRaw['feedback'] as $sectionTitle => $items) {
                     if (is_array($items) && count($items) > 0) {
                         $feedbackParts[] = strtoupper(str_replace('_', ' ', $sectionTitle)) . ':';
                         foreach ($items as $item) {
                             $feedbackParts[] = '- ' . $item;
                         }
-                        $feedbackParts[] = ''; // baris kosong pemisah
+                        $feedbackParts[] = ''; 
                     }
                 }
-
                 $normalized['feedback'] = implode("\n", $feedbackParts);
             }
 
@@ -164,18 +148,14 @@ class CvController extends Controller
         $analysis = CvAnalysis::create([
             'cv_submission_id' => $cvSubmission->id,
             'resume_score' => $result['resume_score'] ?? 0,
-
-            // encode ke JSON string sebelum simpan
             'main_skills_json' => json_encode($result['main_skills'] ?? []),
             'division_recommendations_json' => json_encode($result['division_recommendations'] ?? []),
             'skill_gap_json' => json_encode($result['skill_gaps'] ?? []),
             'readiness_scores_json' => json_encode($result['readiness_scores'] ?? []),
-
             'feedback_text' => $result['feedback'] ?? null,
             'raw_ai_response' => json_encode($result),
         ]);
 
-        // 6. Redirect ke halaman hasil
         return redirect()
             ->route('cv.result', $analysis->id)
             ->with('success', 'CV berhasil dianalisis.');
@@ -187,10 +167,6 @@ class CvController extends Controller
         return view('cv.result', compact('analysis'));
     }
 
-    /**
-     * Helper untuk ekstrak text dari file upload.
-     * Mendukung: TXT, PDF, DOC, DOCX.
-     */
     protected function extractTextFromUploadedFile(UploadedFile $file): ?string
     {
         $extension = strtolower($file->getClientOriginalExtension());
@@ -198,48 +174,32 @@ class CvController extends Controller
 
         try {
             $text = '';
-
-            // 1) TXT – paling simpel
             if ($extension === 'txt') {
                 $text = file_get_contents($filePath) ?: '';
-            }
-
-            // 2) PDF – pakai smalot/pdfparser
-            elseif ($extension === 'pdf') {
+            } elseif ($extension === 'pdf') {
                 $parser = new PdfParser();
                 $pdf = $parser->parseFile($filePath);
                 $text = $pdf->getText() ?? '';
-            }
-
-            // 3) DOCX – pakai PhpOffice\PhpWord
-            elseif ($extension === 'docx') {
+            } elseif ($extension === 'docx') {
                 $phpWord = WordIOFactory::load($filePath, 'Word2007');
                 $text = $this->extractTextFromPhpWord($phpWord);
-            }
-
-            // 4) DOC (format lama)
-            elseif ($extension === 'doc') {
-                // MsDoc reader (bisa gagal untuk beberapa dokumen lama, tapi ini best effort)
+            } elseif ($extension === 'doc') {
                 $phpWord = WordIOFactory::load($filePath, 'MsDoc');
                 $text = $this->extractTextFromPhpWord($phpWord);
-            }
-
-            // Format lain tidak didukung
-            else {
+            } else {
                 return null;
             }
 
-            // Bersihkan & normalisasi teks
             $text = $this->normalizeCvText($text);
 
-            // Kalau setelah dibersihkan masih kosong, anggap gagal
             if (trim($text) === '') {
                 return null;
             }
 
             return $text;
         } catch (\Throwable $e) {
-            \Log::error('CV text extraction failed', [
+            // [FIX Line 242] Menggunakan Log facade yang sudah diimport
+            Log::error('CV text extraction failed', [
                 'extension' => $extension,
                 'message' => $e->getMessage(),
             ]);
@@ -248,16 +208,11 @@ class CvController extends Controller
         }
     }
 
-    /**
-     * Ekstrak teks dari objek PhpWord (DOC/DOCX).
-     */
     protected function extractTextFromPhpWord($phpWord): string
     {
         $text = '';
-
         foreach ($phpWord->getSections() as $section) {
             foreach ($section->getElements() as $element) {
-                // Banyak elemen (TextRun, Text, ListItem, dsb.)
                 if (method_exists($element, 'getText')) {
                     $text .= $element->getText() . "\n";
                 } elseif (method_exists($element, 'getElements')) {
@@ -269,89 +224,76 @@ class CvController extends Controller
                 }
             }
         }
-
         return $text;
     }
 
-    /**
-     * Normalisasi teks CV supaya lebih bersih sebelum dikirim ke AI.
-     */
     protected function normalizeCvText(string $text): string
     {
-        // Pastikan encoding UTF-8
         if (!mb_detect_encoding($text, 'UTF-8', true)) {
             $text = mb_convert_encoding($text, 'UTF-8');
         }
-
-        // Hapus karakter kontrol aneh
         $text = preg_replace('/[^\PC\s]/u', '', $text);
-
-        // Samakan line break
         $text = preg_replace("/\r\n|\r/", "\n", $text);
-
-        // Hapus spasi/tab berlebihan
         $text = preg_replace("/[ \t]+/", ' ', $text);
-
-        // Maksimal 2 newline berturut-turut
         $text = preg_replace("/\n{3,}/", "\n\n", $text);
 
         return trim($text);
     }
+
     public function history()
     {
-    $histories = CvAnalysis::with('cvSubmission')
-        ->whereHas('cvSubmission', function ($q) {
-            $q->where('user_id', auth()->id());
-        })
-        ->latest()
-        ->get();
+        $histories = CvAnalysis::with('cvSubmission')
+            ->whereHas('cvSubmission', function ($q) {
+                // [FIX Line 304] Ganti auth()->id() dengan Auth::id()
+                $q->where('user_id', Auth::id());
+            })
+            ->latest()
+            ->get();
 
-    return view('cv.history', compact('histories'));
+        return view('cv.history', compact('histories'));
     }
 
     public function compareForm($id)
     {
-    $current = CvAnalysis::with('cvSubmission')->findOrFail($id);
+        $current = CvAnalysis::with('cvSubmission')->findOrFail($id);
 
-    $histories = CvAnalysis::with('cvSubmission')
-        ->whereHas('cvSubmission', fn($q) =>
-            $q->where('user_id', auth()->id())
-        )
-        ->where('id', '!=', $id)
-        ->latest()
-        ->get();
+        $histories = CvAnalysis::with('cvSubmission')
+            ->whereHas('cvSubmission', fn($q) =>
+                // [FIX Line 318] Ganti auth()->id() dengan Auth::id()
+                $q->where('user_id', Auth::id())
+            )
+            ->where('id', '!=', $id)
+            ->latest()
+            ->get();
 
-    return view('cv.compare', compact('current', 'histories'));
+        return view('cv.compare', compact('current', 'histories'));
     }
 
     public function compare(Request $request)
     {
-    $request->validate([
-        'cv_a' => 'required|exists:cv_analyses,id',
-        'cv_b' => 'required|exists:cv_analyses,id',
-    ]);
+        $request->validate([
+            'cv_a' => 'required|exists:cv_analyses,id',
+            'cv_b' => 'required|exists:cv_analyses,id',
+        ]);
 
-    $a = CvAnalysis::with('cvSubmission')->findOrFail($request->cv_a);
-    $b = CvAnalysis::with('cvSubmission')->findOrFail($request->cv_b);
+        $a = CvAnalysis::with('cvSubmission')->findOrFail($request->cv_a);
+        $b = CvAnalysis::with('cvSubmission')->findOrFail($request->cv_b);
 
-    return view('cv.compare-result', compact('a', 'b'));
+        return view('cv.compare-result', compact('a', 'b'));
     }
 
     public function destroyHistory(CvAnalysis $analysis)
     {
-    // pastikan CV ini milik user yang login
-    abort_if(
-        $analysis->cvSubmission->user_id !== auth()->id(),
-        403
-    );
+        // [FIX Line 344] Ganti auth()->id() dengan Auth::id()
+        abort_if(
+            $analysis->cvSubmission->user_id !== Auth::id(),
+            403
+        );
 
-    // hapus submission → analysis ikut terhapus (cascade)
-    $analysis->cvSubmission->delete();
+        $analysis->cvSubmission->delete();
 
-    return redirect()
-        ->route('cv.history')
-        ->with('success', 'Riwayat CV berhasil dihapus.');
+        return redirect()
+            ->route('cv.history')
+            ->with('success', 'Riwayat CV berhasil dihapus.');
     }
-
-
 }

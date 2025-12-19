@@ -1,28 +1,37 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
-    </x-slot>
+    {{-- Main Container dengan Background Gelap --}}
+    <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 relative overflow-hidden pb-12">
+        
+        {{-- Background Decoration (Glow Effect) --}}
+        <div class="absolute top-0 left-0 w-[600px] h-[600px] bg-sky-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+        <div class="absolute bottom-0 right-0 w-[600px] h-[600px] bg-emerald-600/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
+
+        <div class="py-12 relative z-10">
+            <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-8">
+                
+                {{-- 
+                    NOTE: 
+                    Kita memanggil partials secara langsung tanpa membungkusnya 
+                    dengan div 'bg-white', karena partials tersebut sudah kita ubah 
+                    menjadi card 'glassmorphism' yang punya background sendiri.
+                --}}
+
+                {{-- Update Profile Info --}}
+                <div class="animate-fade-in-up" style="animation-delay: 0.1s;">
                     @include('profile.partials.update-profile-information-form')
                 </div>
-            </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
+                {{-- Update Password --}}
+                <div class="animate-fade-in-up" style="animation-delay: 0.2s;">
                     @include('profile.partials.update-password-form')
                 </div>
-            </div>
 
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
+                {{-- Delete Account --}}
+                <div class="animate-fade-in-up" style="animation-delay: 0.3s;">
                     @include('profile.partials.delete-user-form')
                 </div>
+
             </div>
         </div>
     </div>
