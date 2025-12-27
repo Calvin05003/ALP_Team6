@@ -28,8 +28,14 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // ⬇️ SEBELUMNYA: redirect()->intended('/dashboard') atau RouteServiceProvider::HOME
-        return redirect()->intended(route('cv.create'));
+        $user = Auth::user();
+
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route('cv.create');
+
     }
 
     /**

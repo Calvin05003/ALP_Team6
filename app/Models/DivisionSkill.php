@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class DivisionSkill extends Model
 {
-    protected $fillable = ['division_id', 'skill_name', 'importance_level'];
+    protected $fillable = [
+        'division_id',
+        'skill_name',
+        'importance_level',
+    ];
 
     public function division()
     {

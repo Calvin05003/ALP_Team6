@@ -44,29 +44,36 @@
                                     {{ $h->resume_score }}/100
                                 </span>
 
+                                {{-- Tombol View --}}
                                 <a href="{{ route('cv.result', $h->id) }}"
                                    class="rounded-full border border-slate-600 px-4 py-1.5 text-xs font-semibold hover:border-sky-400 transition">
                                     View
                                 </a>
 
-                                <a href="{{ route('cv.compare.form', $h->id) }}"
-                                   class="rounded-full border border-slate-600 px-4 py-1.5 text-xs font-semibold hover:border-emerald-400 transition">
-                                    Compare
-                                </a>
-
+                                {{-- Tombol Delete --}}
                                 <form method="POST"
                                       action="{{ route('cv.history.delete', $h->id) }}"
                                       onsubmit="return confirm('Yakin ingin menghapus versi CV ini?')">
                                     @csrf
                                     @method('DELETE')
-
                                     <button type="submit"
                                             class="rounded-full border border-rose-500/40 px-3 py-1.5 text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition">
                                         Delete
                                     </button>
                                 </form>
-                            </div>
 
+                                {{-- Tombol Push to Admin --}}
+                                <form method="POST" action="{{ route('cv.push-to-admin', $h->cvSubmission->id) }}">
+                                    @csrf
+                                    <button type="submit"
+                                        class="rounded-full px-3 py-1.5 text-xs font-semibold
+                                               {{ $h->cvSubmission->is_submitted_to_admin ? 'bg-slate-600 text-slate-400 cursor-not-allowed' : 'bg-emerald-500 text-white hover:bg-emerald-400' }}"
+                                        {{ $h->cvSubmission->is_submitted_to_admin ? 'disabled' : '' }}>
+                                        Push to Admin
+                                    </button>
+                                </form>
+
+                            </div>
                         </div>
                     </div>
                 @empty

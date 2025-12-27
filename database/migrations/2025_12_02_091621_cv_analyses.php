@@ -11,20 +11,20 @@ return new class extends Migration
         Schema::create('cv_analyses', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('cv_submission_id')->constrained('cv_submissions')->cascadeOnDelete();
+            $table->foreignId('cv_submission_id')
+                  ->constrained('cv_submissions')
+                  ->cascadeOnDelete();
 
-            $table->unsignedInteger('resume_score')->default(0);
+            $table->float('resume_score')->nullable();
+            $table->float('ats_score')->nullable();
 
-            // data AI berbentuk JSON
             $table->json('main_skills_json')->nullable();
             $table->json('division_recommendations_json')->nullable();
             $table->json('skill_gap_json')->nullable();
             $table->json('readiness_scores_json')->nullable();
+            $table->json('raw_ai_response')->nullable();
 
-            $table->longText('feedback_text')->nullable();
-
-            // debugging AI response
-            $table->longText('raw_ai_response')->nullable();
+            $table->text('feedback_text')->nullable();
 
             $table->timestamps();
         });

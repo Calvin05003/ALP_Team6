@@ -4,12 +4,24 @@ namespace App\Services;
 
 use App\Models\Division;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 class CvAnalysisService
 {
-    public function analyze(string $cvText): array
-    {
+    /**
+     * @param string $cvText   Isi CV (plain text)
+     * @param string $mode     committee | professional
+     * @param string $language id | en
+     */
+    public function analyze(
+        string $cvText,
+        string $mode = 'committee',
+        string $language = 'id'
+    ): array {
+
+        // =====================================================
         // 1. Ambil data divisi + skill dari database
+        // =====================================================
         $divisions = Division::with('skills')->get()->map(function ($division) {
             return [
                 'name'        => $division->name,
@@ -23,145 +35,234 @@ class CvAnalysisService
             ];
         })->toArray();
 
-        // 2. System prompt (perilaku AI) — versi lebih kaya insight
-        $systemPrompt = <<<PROMPT
-You are an AI assistant that analyzes student CVs for campus committees.
+        // =====================================================
+        // 2. System Prompt
+        // =====================================================
+        $systemPrompt = $this->buildSystemPrompt($mode, $language);
 
-You must:
-- Evaluate CV content, structure, clarity, and grammar.
-- Identify main skills, experiences, and achievements from the CV text.
-- Match the candidate to the most suitable committees (divisions) based on their skills and experiences.
-- For each division, give a readiness score (0-100) and a keyword_match score (0-100) based on how well the CV matches the division's required skills.
-- Identify missing or weak skills (skill gaps) per division.
-- Highlight the strengths and weaknesses of the CV.
-- Identify missing or incomplete sections (e.g., no education, no contact info, no experience, no summary).
-- Estimate the overall experience level of the candidate (Beginner, Intermediate, or Strong) for campus committee work.
-- Provide concrete, actionable suggestions to improve the CV for campus committee applications (suggested_improvements).
-- Provide a final narrative feedback summary (feedback) that combines your main observations.
-
-You MUST respond ONLY with valid JSON (no markdown, no extra text) using EXACTLY this structure:
-
-{
-  "resume_score": number,
-  "ats_score": number,
-  "experience_level": "Beginner" | "Intermediate" | "Strong",
-
-  "main_skills": [string],
-  "achievements": [string],
-
-  "division_recommendations": [
-    {
-      "division_name": string,
-      "reason": string,
-      "keyword_match": number
-    }
-  ],
-
-  "readiness_scores": [
-    {
-      "division_name": string,
-      "score": number
-    }
-  ],
-
-  "skill_gaps": [
-    {
-      "division_name": string,
-      "missing_skills": [string]
-    }
-  ],
-
-  "strengths": [string],
-  "weaknesses": [string],
-  "missing_sections": [string],
-
-  "grammar_issues": {
-    "critical": number,
-    "minor": number,
-    "spelling": number
-  },
-
-  "suggested_improvements": [string],
-
-  "feedback": string
-}
-
-Important rules:
-- Use only plain JSON (no comments, no trailing commas, no markdown).
-- Always include all keys above, even if some arrays are empty or some numbers are 0.
-- "ats_score", "resume_score", "keyword_match", and "readiness_scores[*].score" MUST be between 0 and 100.
-- "experience_level" MUST be exactly one of: "Beginner", "Intermediate", "Strong".
-PROMPT;
-
-        // 3. Ambil API key Groq
+        // =====================================================
+        // 3. API KEY
+        // =====================================================
         $apiKey = env('GROQ_API_KEY');
-
         if (!$apiKey) {
-            throw new \RuntimeException('GROQ_API_KEY belum di-set di file .env');
+            throw new RuntimeException('GROQ_API_KEY belum diset di .env');
         }
 
-        // 4. Endpoint Groq (OpenAI-compatible)
-        $endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-
-        // 5. Susun body request
-        $userContent = "You are given:\n\n"
-            . "1) Division and skill data (in JSON):\n"
-            . json_encode($divisions, JSON_PRETTY_PRINT)
-            . "\n\n2) The raw CV text to analyze:\n"
-            . $cvText
-            . "\n\nAnalyze the CV strictly following the JSON schema described in the system message. "
-            . "Return ONLY the JSON object, nothing else.";
+        // =====================================================
+        // 4. User Content
+        // =====================================================
+        $userContent =
+            "You are given:\n\n" .
+            "1) Division and skill data (JSON):\n" .
+            json_encode($divisions, JSON_PRETTY_PRINT) .
+            "\n\n2) Raw CV text:\n" .
+            $cvText .
+            "\n\nAnalyze STRICTLY following the system instructions and JSON schema. " .
+            "Return ONLY valid JSON.";
 
         $body = [
-            'model' => 'llama-3.3-70b-versatile', // bisa diganti model lain yang kamu mau
+            'model' => 'llama-3.3-70b-versatile',
             'messages' => [
-                [
-                    'role'    => 'system',
-                    'content' => $systemPrompt,
-                ],
-                [
-                    'role'    => 'user',
-                    'content' => $userContent,
-                ],
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $userContent],
             ],
-            // JSON Mode: pastikan balikan valid JSON
-            'response_format' => [
-                'type' => 'json_object',
-            ],
-            'temperature'            => 0.2,
-            'max_completion_tokens'  => 1024,
+            'response_format' => ['type' => 'json_object'],
+            'temperature' => 0.2,
+            'max_completion_tokens' => 1200,
         ];
 
-        // 6. Panggil Groq
+        // =====================================================
+        // 5. Call Groq API
+        // =====================================================
         $response = Http::withHeaders([
             'Content-Type'  => 'application/json',
             'Authorization' => 'Bearer ' . $apiKey,
         ])
             ->timeout(60)
-            ->post($endpoint, $body);
+            ->post('https://api.groq.com/openai/v1/chat/completions', $body);
 
         if ($response->failed()) {
-            throw new \RuntimeException('Groq API error: ' . $response->body());
+            throw new RuntimeException('Groq API Error: ' . $response->body());
         }
 
-        $data = $response->json();
-
-        // Struktur mirip OpenAI: choices[0].message.content
-        $content = $data['choices'][0]['message']['content'] ?? null;
+        $content = $response->json()['choices'][0]['message']['content'] ?? null;
 
         if (!$content) {
-            throw new \RuntimeException('Groq response does not contain content.');
+            throw new RuntimeException('AI response empty');
         }
 
-        // 7. Decode JSON string yang dikirim model
         $decoded = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException(
-                'Failed to decode AI JSON. Error: ' . json_last_error_msg() . '. Raw content: ' . $content
+            throw new RuntimeException(
+                'Invalid JSON from AI: ' . json_last_error_msg() . "\nRaw: " . $content
             );
         }
 
         return $decoded;
+    }
+
+    // =====================================================
+    // PROMPT ROUTER
+    // =====================================================
+    private function buildSystemPrompt(string $mode, string $language): string
+    {
+        return $mode === 'professional'
+            ? $this->professionalPrompt($language)
+            : $this->committeePrompt($language);
+    }
+
+    // =====================================================
+    // KEPANITIAAN PROMPT (FINAL – KOMPLEKS)
+    // =====================================================
+    private function committeePrompt(string $language): string
+    {
+        if ($language === 'id') {
+            return <<<PROMPT
+Anda adalah AI evaluator tingkat senior yang mensimulasikan panel seleksi kepanitiaan kampus dan organisasi mahasiswa.
+
+Gunakan BAHASA INDONESIA SEPENUHNYA. JANGAN mencampur bahasa.
+
+PRINSIP PENILAIAN:
+- Nilai hanya berdasarkan bukti nyata di CV.
+- Penalti klaim soft-skill tanpa contoh konkret.
+- Bedakan setiap divisi secara tegas.
+- Jangan menaikkan skor jika pengalaman tidak relevan.
+
+RUANG LINGKUP:
+- Kualitas struktur dan bahasa CV
+- Pengalaman organisasi dan kepanitiaan
+- Kecocokan kandidat terhadap SETIAP divisi
+- Kesiapan realistis sebagai panitia aktif
+
+DEFINISI LEVEL:
+- Beginner: pengalaman minim / akademik
+- Intermediate: aktif dan berkontribusi
+- Strong: leadership atau impact nyata
+
+WAJIB OUTPUT JSON PERSIS:
+
+{
+  "resume_score": number,
+  "ats_score": number,
+  "experience_level": "Beginner" | "Intermediate" | "Strong",
+  "main_skills": [string],
+  "achievements": [string],
+  "division_recommendations": [
+    { "division_name": string, "reason": string, "keyword_match": number }
+  ],
+  "readiness_scores": [
+    { "division_name": string, "score": number }
+  ],
+  "skill_gaps": [
+    { "division_name": string, "missing_skills": [string] }
+  ],
+  "strengths": [string],
+  "weaknesses": [string],
+  "missing_sections": [string],
+  "grammar_issues": {
+    "critical": number,
+    "minor": number,
+    "spelling": number
+  },
+  "suggested_improvements": [string],
+  "feedback": string
+}
+
+ATURAN:
+- Semua key WAJIB ada
+- Semua skor 0–100
+- Tanpa markdown
+- JSON valid saja
+PROMPT;
+        }
+
+        return <<<PROMPT
+You are a senior AI evaluator for campus committee selection.
+
+USE FULL ENGLISH ONLY.
+
+Evaluate strictly based on evidence in the CV.
+Return ONLY valid JSON with the required structure.
+PROMPT;
+    }
+
+    // =====================================================
+    // PROFESSIONAL PROMPT (FINAL – INDUSTRIAL GRADE)
+    // =====================================================
+    private function professionalPrompt(string $language): string
+    {
+        if ($language === 'id') {
+            return <<<PROMPT
+Anda adalah AI evaluator profesional tingkat senior untuk seleksi kerja dan magang (entry-level hingga junior).
+
+Gunakan BAHASA INDONESIA SEPENUHNYA. JANGAN mencampur bahasa.
+
+ANDA MENSIMULASIKAN:
+- HR Recruiter
+- ATS Screening System
+- Hiring Manager tahap awal
+
+PRINSIP:
+- Objektif dan berbasis bukti
+- Penalti buzzword tanpa konteks
+- Bedakan kandidat "cukup" vs "siap kerja"
+
+FOKUS:
+- Struktur dan profesionalisme CV
+- Pengalaman kerja, magang, proyek
+- Dampak pencapaian (measurable)
+- Kesesuaian skill terhadap divisi
+- Kesiapan industri nyata
+
+DEFINISI LEVEL:
+- Beginner: akademik dominan
+- Intermediate: pengalaman praktis
+- Strong: pengalaman mandiri & konsisten
+
+WAJIB OUTPUT JSON PERSIS:
+
+{
+  "resume_score": number,
+  "ats_score": number,
+  "experience_level": "Beginner" | "Intermediate" | "Strong",
+  "main_skills": [string],
+  "achievements": [string],
+  "division_recommendations": [
+    { "division_name": string, "reason": string, "keyword_match": number }
+  ],
+  "readiness_scores": [
+    { "division_name": string, "score": number }
+  ],
+  "skill_gaps": [
+    { "division_name": string, "missing_skills": [string] }
+  ],
+  "strengths": [string],
+  "weaknesses": [string],
+  "missing_sections": [string],
+  "grammar_issues": {
+    "critical": number,
+    "minor": number,
+    "spelling": number
+  },
+  "suggested_improvements": [string],
+  "feedback": string
+}
+
+ATURAN:
+- Semua key WAJIB ada
+- Semua skor 0–100
+- Nada profesional, bukan motivasional
+- Tanpa markdown
+- JSON valid saja
+PROMPT;
+        }
+
+        return <<<PROMPT
+You are a senior professional AI evaluator for job and internship CV screening.
+
+USE FULL ENGLISH ONLY.
+Return ONLY valid JSON with the required structure.
+PROMPT;
     }
 }

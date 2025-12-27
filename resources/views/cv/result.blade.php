@@ -16,39 +16,45 @@
                     </p>
                 </div>
 
-                <a href="{{ route('cv.create') }}"
-                   class="inline-flex items-center justify-center rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/30 hover:bg-sky-400 transition-all duration-150">
-                    Analyze CV Lain
-                    <span class="ml-2 text-xs">↻</span>
-                </a>
+                @if(auth()->user()->role === 'user')
+                    <a href="{{ route('cv.create') }}"
+                    class="inline-flex items-center justify-center rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/30 hover:bg-sky-400 transition-all duration-150">
+                        Analyze CV Lain
+                        <span class="ml-2 text-xs">↻</span>
+                    </a>
+                @else
+                    <a href="{{ route('admin.dashboard') }}"
+                    class="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-sky-500 transition">
+                        ⬅ Dashboard Admin
+                    </a>
+                @endif
             </div>
 
-            <div class="flex gap-2 mb-6">
-                <a href="{{ route('cv.history') }}"
-                class="inline-flex items-center justify-center rounded-full border border-slate-600 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-sky-400 transition">
-                    CV History
-                </a>
+            @if(auth()->user()->role === 'user')
+                <div class="flex gap-2 mb-6">
 
-                <a href="{{ route('cv.compare.form', $analysis->id) }}"
-                class="inline-flex items-center justify-center rounded-full border border-slate-600 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-emerald-400 transition">
-                    Compare
-                </a>
+                    <a href="{{ route('cv.history') }}"
+                    class="inline-flex items-center justify-center rounded-full border border-slate-600 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-sky-400 transition">
+                        CV History
+                    </a>
 
-                <form method="POST"
-                    action="{{ route('cv.history.delete', $analysis->id) }}"
-                    onsubmit="return confirm('Yakin ingin menghapus versi CV ini dari history?')">
-                    @csrf
-                    @method('DELETE')
+                    <form method="POST"
+                        action="{{ route('cv.history.delete', $analysis->id) }}"
+                        onsubmit="return confirm('Yakin ingin menghapus versi CV ini dari history?')">
+                        @csrf
+                        @method('DELETE')
 
-                    <button type="submit"
-                            class="inline-flex items-center justify-center rounded-full
-                                border border-rose-500/40 px-4 py-2 text-xs font-semibold
-                                text-rose-400 hover:bg-rose-500/10 transition">
-                        Delete Version
-                    </button>
-                </form>
+                        <button type="submit"
+                                class="inline-flex items-center justify-center rounded-full
+                                    border border-rose-500/40 px-4 py-2 text-xs font-semibold
+                                    text-rose-400 hover:bg-rose-500/10 transition">
+                            Delete Version
+                        </button>
+                    </form>
 
-            </div>
+                </div>
+            @endif
+
 
 
             @if (session('success'))
@@ -424,10 +430,18 @@
             </div>
 
             <div class="flex justify-end">
-                <a href="{{ route('cv.create') }}"
-                   class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-950/80 px-5 py-2.5 text-sm font-semibold text-slate-100 hover:border-sky-400 hover:text-sky-100 hover:bg-slate-900 transition-all duration-150">
-                    Kembali ke Upload / Input CV
-                </a>
+                @if(auth()->user()->role === 'user')
+                    <a href="{{ route('cv.create') }}"
+                    class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-950/80 px-5 py-2.5 text-sm font-semibold text-slate-100 hover:border-sky-400 transition">
+                        Kembali ke Upload / Input CV
+                    </a>
+                @else
+                    <a href="{{ route('admin.dashboard') }}"
+                    class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-950/80 px-5 py-2.5 text-sm font-semibold text-slate-100 hover:border-sky-400 transition">
+                        ⬅ Kembali ke Dashboard Admin
+                    </a>
+                @endif
+
             </div>
         </div>
     </div>

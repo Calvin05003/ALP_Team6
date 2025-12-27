@@ -12,10 +12,24 @@ class CvSubmission extends Model
         'stored_path',
         'extracted_text',
         'input_mode',
+        'analysis_mode',
+        'language',
     ];
 
-    public function analysis()
+    public function user()
     {
-        return $this->hasOne(CvAnalysis::class);
+        return $this->belongsTo(User::class);
+    }
+
+    // Relasi ke division
+    public function division()
+    {
+        return $this->belongsTo(Division::class); // pastikan ada model Division
+    }
+
+    // Relasi ke CV Analysis
+    public function analyses()
+    {
+        return $this->hasMany(CvAnalysis::class);
     }
 }

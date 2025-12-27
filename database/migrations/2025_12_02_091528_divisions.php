@@ -12,8 +12,13 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->text('description')->nullable();
+
+            // ⬇️ tipe divisi
+            $table->enum('type', ['professional', 'committee']);
+
             $table->timestamps();
         });
+
     }
 
     public function down(): void

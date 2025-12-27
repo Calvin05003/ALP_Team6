@@ -11,15 +11,19 @@ return new class extends Migration
         Schema::create('cv_submissions', function (Blueprint $table) {
             $table->id();
 
-            // optional jika user belum login
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('user_id')
+                  ->nullable()
+                  ->constrained('users')
+                  ->nullOnDelete();
 
             $table->string('original_filename');
             $table->string('stored_path')->nullable();
-
             $table->longText('extracted_text')->nullable();
 
             $table->enum('input_mode', ['file', 'manual'])->default('file');
+            $table->enum('analysis_mode', ['professional', 'committee'])->default('professional');
+            $table->enum('language', ['id', 'en'])->default('id');
+            $table->boolean('is_submitted_to_admin')->default(false);
 
             $table->timestamps();
         });

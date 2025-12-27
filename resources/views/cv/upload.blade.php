@@ -1,74 +1,92 @@
-{{-- resources/views/cv/upload.blade.php --}}
 <x-app-layout>
-    <div class="max-w-3xl mx-auto py-8">
-        <h1 class="text-2xl font-bold mb-4">CareerLens.AI – Upload CV</h1>
+    <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+        <div class="max-w-4xl mx-auto py-10 px-4">
 
-        @if ($errors->any())
-            <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                <ul class="list-disc pl-5">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+            <h1 class="text-2xl font-semibold mb-6">
+                Analyze CV dengan AI
+            </h1>
 
-        @if (session('success'))
-            <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                {{ session('success') }}
-            </div>
-        @endif
+            <form
+                action="{{ route('cv.store') }}"
+                method="POST"
+                enctype="multipart/form-data"
+                class="space-y-6 bg-slate-900/60 border border-slate-800 rounded-xl p-6">
 
-        <form action="{{ route('cv.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-            @csrf
+                @csrf
 
-            <div>
-                <label class="font-semibold block mb-2">Input mode</label>
-                <label class="inline-flex items-center mr-4">
-                    <input type="radio" name="input_mode" value="file" {{ old('input_mode', 'file') === 'file' ? 'checked' : '' }}>
-                    <span class="ml-2">Upload CV file (PDF/DOCX/TXT)</span>
-                </label>
-                <label class="inline-flex items-center">
-                    <input type="radio" name="input_mode" value="manual" {{ old('input_mode') === 'manual' ? 'checked' : '' }}>
-                    <span class="ml-2">Manual text input</span>
-                </label>
-            </div>
+                {{-- Upload CV --}}
+                <div>
+                    <label class="block text-sm mb-1">Upload CV (PDF)</label>
+                    <input
+                        type="file"
+                        name="cv"
+                        accept=".pdf"
+                        required
+                        class="w-full rounded-md bg-slate-950 border border-slate-700 text-sm">
+                </div>
 
-            <div id="file-input-wrapper">
-                <label class="block mb-2 font-semibold">CV File</label>
-                <input type="file" name="cv_file" class="border rounded w-full px-3 py-2">
-                <p class="text-sm text-gray-500 mt-1">Maksimal 5 MB. Format: pdf, doc, docx, txt.</p>
-            </div>
+                {{-- Bahasa --}}
+                <div>
+                    <label class="block text-sm mb-1">Bahasa Analisis</label>
+                    <select
+                        name="language"
+                        required
+                        class="w-full rounded-md bg-slate-950 border border-slate-700 text-sm">
+                        <option value="id">Bahasa Indonesia</option>
+                        <option value="en">English</option>
+                    </select>
+                </div>
 
-            <div id="manual-input-wrapper" style="display: none;">
-                <label class="block mb-2 font-semibold">CV Text (Manual)</label>
-                <textarea name="cv_text" rows="10" class="border rounded w-full px-3 py-2">{{ old('cv_text') }}</textarea>
-                <p class="text-sm text-gray-500 mt-1">Copy-paste isi CV kamu di sini jika tidak upload file.</p>
-            </div>
+                {{-- Jenis Analisis --}}
+                <div>
+                    <label class="block text-sm mb-1">Jenis Analisis</label>
+                    <select
+                        name="analysis_type"
+                        required
+                        class="w-full rounded-md bg-slate-950 border border-slate-700 text-sm">
+                        <option value="kepanitiaan">Kepanitiaan</option>
+                        <option value="professional">Professional</option>
+                    </select>
+                </div>
 
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
-                Analyze CV
-            </button>
-        </form>
+                <button
+                    type="submit"
+                    class="px-6 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 transition font-medium">
+                    Analyze CV
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {{-- LOADING OVERLAY --}}
+    <div
+        id="loading-overlay"
+        class="fixed inset-0 z-50 hidden items-center justify-center
+               bg-slate-950/80 backdrop-blur-sm">
+
+        <div class="flex flex-col items-center gap-4">
+            <svg class="animate-spin h-10 w-10 text-sky-400" viewBox="0 0 24 24">
+                <circle class="opacity-20" cx="12" cy="12" r="10"
+                        stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-80" fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+            </svg>
+
+            <p class="text-sm text-slate-300">
+                Menganalisis CV dengan AI…
+            </p>
+        </div>
     </div>
 
     <script>
-        const fileWrapper = document.getElementById('file-input-wrapper');
-        const manualWrapper = document.getElementById('manual-input-wrapper');
-        const radios = document.querySelectorAll('input[name="input_mode"]');
+        const form = document.querySelector('form[action="{{ route('cv.store') }}"]');
+        const overlay = document.getElementById('loading-overlay');
 
-        function updateMode() {
-            const mode = document.querySelector('input[name="input_mode"]:checked').value;
-            if (mode === 'file') {
-                fileWrapper.style.display = 'block';
-                manualWrapper.style.display = 'none';
-            } else {
-                fileWrapper.style.display = 'none';
-                manualWrapper.style.display = 'block';
-            }
+        if (form) {
+            form.addEventListener('submit', () => {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            });
         }
-
-        radios.forEach(r => r.addEventListener('change', updateMode));
-        updateMode();
     </script>
 </x-app-layout>
