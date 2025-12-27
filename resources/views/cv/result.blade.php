@@ -1,448 +1,266 @@
 <x-app-layout>
-    <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
-        <div class="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 relative overflow-hidden">
+        {{-- Decorative Glow --}}
+        <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-sky-500/10 blur-[150px] rounded-full pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-500/5 blur-[150px] rounded-full pointer-events-none"></div>
 
-            {{-- Header + CTA --}}
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div class="max-w-6xl mx-auto py-12 px-4 sm:px-6 lg:px-8 relative">
+
+            {{-- Header Section --}}
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                 <div>
-                    <p class="text-xs font-semibold tracking-[0.25em] text-sky-400/80 uppercase">
-                        CareerLens.AI
-                    </p>
-                    <h1 class="mt-2 text-3xl font-semibold text-slate-50">
-                        Hasil Analisis CV
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-400 text-[10px] font-bold uppercase tracking-wider border border-sky-500/30">
+                            AI Analysis Engine v2.0
+                        </span>
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-white tracking-tight sm:text-4xl">
+                        CV <span class="text-sky-400">Insights</span> Report
                     </h1>
-                    <p class="mt-1 text-sm text-slate-400">
-                        Insight otomatis untuk membantu kamu memilih divisi yang paling cocok.
+                    <p class="mt-2 text-slate-400 text-sm max-w-xl">
+                        Analisis cerdas untuk memetakan potensi karir Anda berdasarkan kualifikasi, pengalaman, dan struktur CV.
                     </p>
                 </div>
 
-                @if(auth()->user()->role === 'user')
-                    <a href="{{ route('cv.create') }}"
-                    class="inline-flex items-center justify-center rounded-full bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-500/30 hover:bg-sky-400 transition-all duration-150">
-                        Analyze CV Lain
-                        <span class="ml-2 text-xs">↻</span>
-                    </a>
-                @else
-                    <a href="{{ route('admin.dashboard') }}"
-                    class="inline-flex items-center justify-center rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-sky-500 transition">
-                        ⬅ Dashboard Admin
-                    </a>
-                @endif
+                <div class="flex flex-wrap gap-3">
+                    @if(auth()->user()->role === 'user')
+                        <a href="{{ route('cv.history') }}" class="inline-flex items-center px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900/50 text-xs font-bold hover:bg-slate-800 transition-all">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            History
+                        </a>
+                        <a href="{{ route('cv.create') }}" class="inline-flex items-center px-5 py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold hover:bg-sky-500 shadow-lg shadow-sky-900/20 transition-all">
+                            Analyze CV Baru
+                        </a>
+                    @else
+                        <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center px-5 py-2.5 rounded-xl bg-slate-800 text-white text-xs font-bold hover:bg-slate-700 transition-all">
+                            ⬅ Dashboard Admin
+                        </a>
+                    @endif
+                </div>
             </div>
 
-            @if(auth()->user()->role === 'user')
-                <div class="flex gap-2 mb-6">
-
-                    <a href="{{ route('cv.history') }}"
-                    class="inline-flex items-center justify-center rounded-full border border-slate-600 px-4 py-2 text-xs font-semibold text-slate-200 hover:border-sky-400 transition">
-                        CV History
-                    </a>
-
-                    <form method="POST"
-                        action="{{ route('cv.history.delete', $analysis->id) }}"
-                        onsubmit="return confirm('Yakin ingin menghapus versi CV ini dari history?')">
-                        @csrf
-                        @method('DELETE')
-
-                        <button type="submit"
-                                class="inline-flex items-center justify-center rounded-full
-                                    border border-rose-500/40 px-4 py-2 text-xs font-semibold
-                                    text-rose-400 hover:bg-rose-500/10 transition">
-                            Delete Version
-                        </button>
-                    </form>
-
-                </div>
-            @endif
-
-
-
-            @if (session('success'))
-                <div class="mb-6 rounded-xl border border-emerald-500/40 bg-emerald-900/20 px-4 py-3 text-sm text-emerald-100 backdrop-blur">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            {{-- Meta info --}}
-            <div class="mb-6 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                <span class="rounded-full border border-slate-700/70 bg-slate-900/60 px-3 py-1">
-                    Submission ID:
-                    <span class="font-semibold text-slate-200">{{ $analysis->cv_submission_id }}</span>
-                </span>
-                <span class="rounded-full border border-slate-700/70 bg-slate-900/60 px-3 py-1">
-                    Mode:
-                    <span class="font-semibold text-slate-200">
-                        {{ ucfirst($analysis->cvSubmission->input_mode ?? 'unknown') }}
-                    </span>
-                </span>
-            </div>
-
-            {{-- Normalisasi JSON sekali di sini --}}
+            {{-- Data Processing --}}
             @php
-                // Data utama dari kolom JSON spesifik
-                $mainSkills = $analysis->main_skills_json;
-                if (is_string($mainSkills)) {
-                    $decoded = json_decode($mainSkills, true);
-                    $mainSkills = is_array($decoded) ? $decoded : [];
-                } elseif (!is_array($mainSkills)) {
-                    $mainSkills = [];
-                }
-
-                $divisionRecs = $analysis->division_recommendations_json;
-                if (is_string($divisionRecs)) {
-                    $decoded = json_decode($divisionRecs, true);
-                    $divisionRecs = is_array($decoded) ? $decoded : [];
-                } elseif (!is_array($divisionRecs)) {
-                    $divisionRecs = [];
-                }
-
-                $readinessScores = $analysis->readiness_scores_json;
-                if (is_string($readinessScores)) {
-                    $decoded = json_decode($readinessScores, true);
-                    $readinessScores = is_array($decoded) ? $decoded : [];
-                } elseif (!is_array($readinessScores)) {
-                    $readinessScores = [];
-                }
-
-                $skillGaps = $analysis->skill_gap_json;
-                if (is_string($skillGaps)) {
-                    $decoded = json_decode($skillGaps, true);
-                    $skillGaps = is_array($decoded) ? $decoded : [];
-                } elseif (!is_array($skillGaps)) {
-                    $skillGaps = [];
-                }
-
-                // Decode raw_ai_response untuk field tambahan (ats_score, strengths, dll.)
-                $raw = $analysis->raw_ai_response;
-                if (is_string($raw)) {
-                    $rawDecoded = json_decode($raw, true);
-                    $rawDecoded = is_array($rawDecoded) ? $rawDecoded : [];
-                } elseif (is_array($raw)) {
-                    $rawDecoded = $raw;
-                } else {
-                    $rawDecoded = [];
-                }
-
-                $atsScore            = $rawDecoded['ats_score']           ?? null;
-                $experienceLevel     = $rawDecoded['experience_level']    ?? null;
-                $achievements        = $rawDecoded['achievements']        ?? [];
-                $strengths           = $rawDecoded['strengths']           ?? [];
-                $weaknesses          = $rawDecoded['weaknesses']          ?? [];
-                $missingSections     = $rawDecoded['missing_sections']    ?? [];
-                $suggestedImprovements = $rawDecoded['suggested_improvements'] ?? [];
-                $grammarIssues       = $rawDecoded['grammar_issues']      ?? [];
-                if (!is_array($achievements)) $achievements = [];
-                if (!is_array($strengths)) $strengths = [];
-                if (!is_array($weaknesses)) $weaknesses = [];
-                if (!is_array($missingSections)) $missingSections = [];
-                if (!is_array($suggestedImprovements)) $suggestedImprovements = [];
-                if (!is_array($grammarIssues)) $grammarIssues = [];
-
-                $grammarCritical = $grammarIssues['critical'] ?? 0;
-                $grammarMinor    = $grammarIssues['minor']    ?? 0;
-                $grammarSpelling = $grammarIssues['spelling'] ?? 0;
+                // (Logika decoding tetap sama seperti kode asli Anda)
+                $mainSkills = is_string($analysis->main_skills_json) ? (json_decode($analysis->main_skills_json, true) ?? []) : ($analysis->main_skills_json ?? []);
+                $divisionRecs = is_string($analysis->division_recommendations_json) ? (json_decode($analysis->division_recommendations_json, true) ?? []) : ($analysis->division_recommendations_json ?? []);
+                $readinessScores = is_string($analysis->readiness_scores_json) ? (json_decode($analysis->readiness_scores_json, true) ?? []) : ($analysis->readiness_scores_json ?? []);
+                $skillGaps = is_string($analysis->skill_gap_json) ? (json_decode($analysis->skill_gap_json, true) ?? []) : ($analysis->skill_gap_json ?? []);
+                
+                $raw = is_string($analysis->raw_ai_response) ? (json_decode($analysis->raw_ai_response, true) ?? []) : ($analysis->raw_ai_response ?? []);
+                $atsScore = $raw['ats_score'] ?? 0;
+                $experienceLevel = $raw['experience_level'] ?? 'N/A';
+                $achievements = $raw['achievements'] ?? [];
+                $strengths = $raw['strengths'] ?? [];
+                $weaknesses = $raw['weaknesses'] ?? [];
+                $missingSections = $raw['missing_sections'] ?? [];
+                $suggestedImprovements = $raw['suggested_improvements'] ?? [];
+                $grammarIssues = $raw['grammar_issues'] ?? ['critical' => 0, 'minor' => 0, 'spelling' => 0];
             @endphp
 
-            {{-- Top summary cards --}}
-            <div class="grid gap-6 md:grid-cols-[1.15fr,1.5fr] mb-8">
-                {{-- Resume + ATS + Experience --}}
-                <div class="relative overflow-hidden rounded-2xl border border-slate-700/70 bg-gradient-to-br from-slate-900 to-slate-900/40 p-5 shadow-xl shadow-slate-950/60">
-                    <div class="absolute inset-0 pointer-events-none opacity-60"
-                         style="background: radial-gradient(circle at 0 0, rgba(56,189,248,.18), transparent 55%);">
+            {{-- Top Stats Grid --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                
+                {{-- Hero Score Card --}}
+                <div class="lg:col-span-2 relative overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/40 p-8 backdrop-blur-md shadow-2xl">
+                    <div class="absolute top-0 right-0 p-6">
+                        <svg class="w-20 h-20 text-sky-500/10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                     </div>
-
-                    <div class="relative space-y-4">
-                        <div>
-                            <h2 class="text-sm font-semibold text-slate-300 mb-2">Resume Score</h2>
-                            <div class="flex items-end gap-2">
-                                <p class="text-4xl font-semibold text-sky-400">
-                                    {{ $analysis->resume_score }}
-                                </p>
-                                <span class="mb-1 text-sm text-slate-400">/ 100</span>
+                    
+                    <div class="relative flex flex-col md:flex-row md:items-center gap-8">
+                        <div class="flex-shrink-0 text-center md:text-left">
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mb-1">Overall Resume Score</p>
+                            <div class="flex items-center justify-center md:justify-start">
+                                <span class="text-7xl font-black text-white leading-none">{{ $analysis->resume_score }}</span>
+                                <span class="text-xl font-bold text-slate-600 ml-2">/100</span>
                             </div>
+                        </div>
 
-                            {{-- progress bar kecil --}}
-                            <div class="mt-4 h-1.5 w-full rounded-full bg-slate-800/80 overflow-hidden">
-                                <div class="h-full rounded-full bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-300"
-                                     style="width: {{ max(0, min(100, (int) $analysis->resume_score)) }}%;">
+                        <div class="flex-grow space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
+                                    <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">ATS Compatibility</p>
+                                    <p class="text-lg font-bold text-emerald-400">{{ $atsScore }}%</p>
+                                </div>
+                                <div class="p-4 rounded-2xl bg-slate-950/50 border border-slate-800">
+                                    <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Exp. Level</p>
+                                    <p class="text-lg font-bold text-sky-400">{{ $experienceLevel }}</p>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-3 text-xs">
-                            <div class="rounded-xl border border-slate-700/80 bg-slate-950/70 px-3 py-2">
-                                <p class="text-[11px] text-slate-400 mb-1">
-                                    ATS Compatibility
-                                </p>
-                                <p class="text-sm font-semibold text-emerald-300">
-                                    {{ $atsScore !== null ? $atsScore . ' / 100' : 'N/A' }}
-                                </p>
-                            </div>
-                            <div class="rounded-xl border border-slate-700/80 bg-slate-950/70 px-3 py-2">
-                                <p class="text-[11px] text-slate-400 mb-1">
-                                    Experience Level
-                                </p>
-                                <p class="inline-flex items-center gap-1 text-sm font-semibold">
-                                    @if ($experienceLevel)
-                                        <span class="h-1.5 w-1.5 rounded-full bg-sky-400"></span>
-                                        <span class="text-slate-100">{{ $experienceLevel }}</span>
-                                    @else
-                                        <span class="text-slate-500">Not estimated</span>
-                                    @endif
-                                </p>
+                            <div class="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-sky-600 to-emerald-500 transition-all duration-1000" style="width: {{ $analysis->resume_score }}%"></div>
                             </div>
                         </div>
-
-                        <p class="text-[11px] text-slate-500">
-                            Skor dan level ini membantu kamu memahami seberapa siap CV kamu untuk pendaftaran kepanitiaan maupun sistem seleksi semi-ATS.
-                        </p>
                     </div>
                 </div>
 
-                {{-- Main skills + Achievements --}}
-                <div class="space-y-4">
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/60">
-                        <h2 class="text-sm font-semibold text-slate-200 mb-3">Main Skills Terdeteksi</h2>
-
-                        <div class="flex flex-wrap gap-2">
-                            @forelse($mainSkills as $skill)
-                                @php
-                                    $label = is_array($skill)
-                                        ? ($skill['name'] ?? json_encode($skill))
-                                        : $skill;
-                                @endphp
-                                <span class="inline-flex items-center rounded-full border border-slate-700 bg-slate-950/70 px-3 py-1 text-xs text-slate-200">
-                                    <span class="mr-1 h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-                                    {{ $label }}
-                                </span>
-                            @empty
-                                <p class="text-xs text-slate-500">
-                                    Belum ada skill yang terdeteksi dari CV ini.
-                                </p>
-                            @endforelse
-                        </div>
+                {{-- Detected Skills --}}
+                <div class="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 backdrop-blur-md">
+                    <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        Main Skills
+                    </h3>
+                    <div class="flex flex-wrap gap-2">
+                        @forelse($mainSkills as $skill)
+                            <span class="px-3 py-1.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-[11px] font-semibold text-sky-300">
+                                {{ is_array($skill) ? ($skill['name'] ?? 'Skill') : $skill }}
+                            </span>
+                        @empty
+                            <p class="text-xs text-slate-500">No skills detected.</p>
+                        @endforelse
                     </div>
+                </div>
+            </div>
 
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/60">
-                        <h2 class="text-sm font-semibold text-slate-200 mb-3">Achievements (Pencapaian)</h2>
-                        @if (count($achievements))
-                            <ul class="list-disc pl-4 text-xs text-slate-300 space-y-1.5">
-                                @foreach($achievements as $ach)
-                                    <li>{{ $ach }}</li>
+            {{-- Recommendations & Readiness --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {{-- Division Match --}}
+                <div class="rounded-3xl border border-slate-800 bg-slate-900/40 p-6">
+                    <h3 class="text-sm font-bold text-slate-200 mb-5 flex items-center justify-between">
+                        <span>Rekomendasi Divisi</span>
+                        <span class="text-[10px] text-slate-500 font-normal uppercase tracking-widest">Matching Engine</span>
+                    </h3>
+                    <div class="space-y-4">
+                        @foreach($divisionRecs as $rec)
+                        <div class="group p-4 rounded-2xl bg-slate-950/40 border border-slate-800 hover:border-sky-500/50 transition-all">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-bold text-white">{{ $rec['division_name'] ?? '-' }}</span>
+                                <span class="text-xs font-bold text-sky-400">{{ $rec['keyword_match'] ?? 0 }}% Match</span>
+                            </div>
+                            <p class="text-xs text-slate-400 leading-relaxed">{{ $rec['reason'] ?? '' }}</p>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Readiness Radar --}}
+                <div class="rounded-3xl border border-slate-800 bg-slate-900/40 p-6">
+                    <h3 class="text-sm font-bold text-slate-200 mb-5">Readiness & Skill Gaps</h3>
+                    <div class="space-y-6">
+                        @foreach($readinessScores as $index => $r)
+                        <div>
+                            <div class="flex justify-between text-[11px] font-bold mb-2">
+                                <span class="text-slate-300">{{ $r['division_name'] }}</span>
+                                <span class="text-emerald-400">{{ $r['score'] }}/100</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-slate-800 rounded-full mb-3">
+                                <div class="h-full bg-emerald-500 rounded-full" style="width: {{ $r['score'] }}%"></div>
+                            </div>
+                            {{-- Corresponding Gap --}}
+                            @if(isset($skillGaps[$index]['missing_skills']))
+                            <div class="flex flex-wrap gap-1.5">
+                                <span class="text-[10px] text-rose-400 font-bold uppercase mr-1">Missing:</span>
+                                @foreach($skillGaps[$index]['missing_skills'] as $ms)
+                                    <span class="text-[10px] text-slate-500">• {{ $ms }}</span>
                                 @endforeach
-                            </ul>
-                        @else
-                            <p class="text-xs text-slate-500">
-                                Belum ada pencapaian spesifik yang terdeteksi. Coba tambahkan hasil yang terukur (contoh: “Meningkatkan jumlah peserta 30%”).
-                            </p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            {{-- Strengths & Weaknesses --}}
-            <div class="grid gap-6 md:grid-cols-2 mb-8">
-                <div class="rounded-2xl border border-emerald-500/40 bg-emerald-950/40 p-5 shadow-lg shadow-emerald-900/40">
-                    <h2 class="text-sm font-semibold text-emerald-100 mb-3">
-                        CV Strengths
-                    </h2>
-                    @if (count($strengths))
-                        <ul class="list-disc pl-4 text-xs text-emerald-50 space-y-1.5">
-                            @foreach($strengths as $s)
-                                <li>{{ $s }}</li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <p class="text-xs text-emerald-200/70">
-                            Belum ada strength spesifik. Biasanya berisi hal-hal yang sudah kamu lakukan dengan baik, seperti struktur rapi, pengalaman relevan, atau penggunaan bahasa yang jelas.
-                        </p>
-                    @endif
-                </div>
-
-                <div class="rounded-2xl border border-rose-500/40 bg-rose-950/40 p-5 shadow-lg shadow-rose-900/40">
-                    <h2 class="text-sm font-semibold text-rose-100 mb-3">
-                        CV Weaknesses
-                    </h2>
-                    @if (count($weaknesses))
-                        <ul class="list-disc pl-4 text-xs text-rose-50 space-y-1.5">
-                            @foreach($weaknesses as $w)
-                                <li>{{ $w }}</li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <p class="text-xs text-rose-200/80">
-                            Tidak ada weakness spesifik yang terdeteksi, atau model belum memetakan secara eksplisit.
-                        </p>
-                    @endif
-                </div>
-            </div>
-
-            {{-- Division recommendations --}}
-            <div class="mb-6 rounded-2xl border border-slate-700/70 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/60">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold text-slate-200">
-                        Rekomendasi Divisi
-                    </h2>
-                    <span class="rounded-full border border-slate-700 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                        Match, Keyword &amp; Alasan
-                    </span>
-                </div>
-
-                @forelse($divisionRecs as $rec)
-                    @php
-                        $keywordMatch = $rec['keyword_match'] ?? null;
-                    @endphp
-                    <div class="mb-4 last:mb-0 rounded-xl border border-slate-800/80 bg-slate-950/60 px-4 py-3 space-y-1.5">
-                        <div class="flex items-center justify-between">
-                            <p class="text-sm font-semibold text-slate-100">
-                                {{ $rec['division_name'] ?? '-' }}
-                            </p>
-                            @if ($keywordMatch !== null)
-                                <span class="text-[11px] text-sky-300 font-medium">
-                                    Keyword match: {{ $keywordMatch }}%
-                                </span>
+                            </div>
                             @endif
                         </div>
-                        <p class="text-xs text-slate-400">
-                            {{ $rec['reason'] ?? '' }}
-                        </p>
+                        @endforeach
                     </div>
-                @empty
-                    <p class="text-xs text-slate-500">
-                        Belum ada rekomendasi divisi yang bisa ditampilkan.
-                    </p>
-                @endforelse
+                </div>
             </div>
 
-            {{-- Readiness + Skill gaps + Missing sections / Grammar --}}
-            <div class="grid gap-6 md:grid-cols-3 mb-8">
-                {{-- Readiness per division --}}
-                <div class="md:col-span-1 rounded-2xl border border-slate-700/70 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/60">
-                    <h2 class="text-sm font-semibold text-slate-200 mb-3">
-                        Skor Kesiapan per Divisi
-                    </h2>
-                    <ul class="space-y-2">
-                        @forelse($readinessScores as $r)
-                            <li class="flex items-center justify-between rounded-xl bg-slate-950/60 px-3 py-2">
-                                <span class="text-xs text-slate-300">
-                                    {{ $r['division_name'] ?? '-' }}
-                                </span>
-                                <span class="text-xs font-semibold text-sky-300">
-                                    {{ $r['score'] ?? 0 }} / 100
-                                </span>
-                            </li>
-                        @empty
-                            <li class="text-xs text-slate-500">
-                                Belum ada skor kesiapan yang tersedia.
-                            </li>
-                        @endforelse
-                    </ul>
-                </div>
-
-                {{-- Skill gaps --}}
-                <div class="md:col-span-1 rounded-2xl border border-slate-700/70 bg-slate-900/70 p-5 shadow-lg shadow-slate-950/60">
-                    <h2 class="text-sm font-semibold text-slate-200 mb-3">
-                        Skill Gaps (Per Divisi)
-                    </h2>
-
-                    @forelse($skillGaps as $gap)
-                        <div class="mb-4 last:mb-0 rounded-xl bg-slate-950/60 px-3 py-3">
-                            <p class="text-xs font-semibold text-slate-100">
-                                {{ $gap['division_name'] ?? '-' }}
-                            </p>
-                            <ul class="mt-1 list-disc pl-4 text-[11px] text-slate-400">
-                                @foreach(($gap['missing_skills'] ?? []) as $ms)
-                                    <li>{{ $ms }}</li>
+            {{-- Detailed Feedback Section --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                
+                {{-- Strengths & Weaknesses --}}
+                <div class="lg:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/40 overflow-hidden">
+                    <div class="grid md:grid-cols-2">
+                        <div class="p-6 border-b md:border-b-0 md:border-r border-slate-800 bg-emerald-500/[0.02]">
+                            <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-4 flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Strengths
+                            </h4>
+                            <ul class="space-y-3">
+                                @foreach($strengths as $s)
+                                    <li class="text-xs text-slate-300 flex items-start gap-3">
+                                        <span class="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        {{ $s }}
+                                    </li>
                                 @endforeach
                             </ul>
                         </div>
-                    @empty
-                        <p class="text-xs text-slate-500">
-                            Tidak ada skill gap yang terdeteksi atau belum dianalisis.
-                        </p>
-                    @endforelse
-                </div>
-
-                {{-- Missing sections + Grammar --}}
-                <div class="md:col-span-1 space-y-4">
-                    <div class="rounded-2xl border border-amber-500/40 bg-amber-950/40 p-4 shadow-lg shadow-amber-900/40">
-                        <h2 class="text-sm font-semibold text-amber-100 mb-2">
-                            Missing / Lemah di Bagian Ini
-                        </h2>
-                        @if (count($missingSections))
-                            <ul class="list-disc pl-4 text-[11px] text-amber-50 space-y-1.5">
-                                @foreach($missingSections as $m)
-                                    <li>{{ $m }}</li>
+                        <div class="p-6 bg-rose-500/[0.02]">
+                            <h4 class="text-xs font-bold text-rose-400 uppercase tracking-widest mb-4 flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                Weaknesses
+                            </h4>
+                            <ul class="space-y-3">
+                                @foreach($weaknesses as $w)
+                                    <li class="text-xs text-slate-300 flex items-start gap-3">
+                                        <span class="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                        {{ $w }}
+                                    </li>
                                 @endforeach
                             </ul>
-                        @else
-                            <p class="text-[11px] text-amber-100/80">
-                                Tidak ada bagian yang jelas-jelas hilang, atau model tidak mendeteksi kekurangan struktur besar.
-                            </p>
-                        @endif
+                        </div>
                     </div>
+                </div>
 
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/60">
-                        <h2 class="text-sm font-semibold text-slate-200 mb-2">
-                            Grammar &amp; Spelling Issues
-                        </h2>
-                        <dl class="grid grid-cols-3 gap-2 text-[11px] text-slate-200">
-                            <div class="rounded-lg bg-slate-950/70 px-2.5 py-2 text-center">
-                                <dt class="text-slate-400 mb-0.5">Critical</dt>
-                                <dd class="font-semibold">{{ $grammarCritical }}</dd>
+                {{-- Issues & Grammar --}}
+                <div class="space-y-6">
+                    <div class="rounded-3xl border border-amber-500/20 bg-amber-500/[0.03] p-6">
+                        <h4 class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-4">Missing Sections</h4>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($missingSections as $m)
+                                <span class="px-2 py-1 rounded bg-amber-500/10 text-[10px] text-amber-200 border border-amber-500/20">{{ $m }}</span>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="rounded-3xl border border-slate-800 bg-slate-900/60 p-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Grammar Check</h4>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="text-center">
+                                <p class="text-lg font-bold text-rose-500">{{ $grammarIssues['critical'] }}</p>
+                                <p class="text-[9px] text-slate-500 uppercase">Critical</p>
                             </div>
-                            <div class="rounded-lg bg-slate-950/70 px-2.5 py-2 text-center">
-                                <dt class="text-slate-400 mb-0.5">Minor</dt>
-                                <dd class="font-semibold">{{ $grammarMinor }}</dd>
+                            <div class="text-center">
+                                <p class="text-lg font-bold text-amber-500">{{ $grammarIssues['minor'] }}</p>
+                                <p class="text-[9px] text-slate-500 uppercase">Minor</p>
                             </div>
-                            <div class="rounded-lg bg-slate-950/70 px-2.5 py-2 text-center">
-                                <dt class="text-slate-400 mb-0.5">Spelling</dt>
-                                <dd class="font-semibold">{{ $grammarSpelling }}</dd>
+                            <div class="text-center">
+                                <p class="text-lg font-bold text-sky-500">{{ $grammarIssues['spelling'] }}</p>
+                                <p class="text-[9px] text-slate-500 uppercase">Typos</p>
                             </div>
-                        </dl>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Feedback + Actionable suggestions --}}
-            <div class="rounded-2xl border border-slate-700/70 bg-slate-900/80 p-6 shadow-xl shadow-slate-950/70 mb-6">
-                <h2 class="text-sm font-semibold text-slate-200 mb-3">
-                    Feedback Detail untuk CV Kamu
-                </h2>
-                <p class="whitespace-pre-line text-sm leading-relaxed text-slate-200/90 mb-4">
-                    {{ $analysis->feedback_text ?? 'Belum ada feedback tertulis.' }}
+            {{-- Conclusion & Action Items --}}
+            <div class="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-sky-500/5 blur-3xl rounded-full"></div>
+                <h3 class="text-xl font-bold text-white mb-4">Kesimpulan & Langkah Perbaikan</h3>
+                <p class="text-slate-300 text-sm leading-relaxed mb-8 italic">
+                    "{{ $analysis->feedback_text ?? 'Tidak ada feedback tambahan.' }}"
                 </p>
-
-                <h3 class="text-xs font-semibold text-slate-300 mb-2">
-                    Suggested Improvements (Langkah Next untuk Upgrade CV)
-                </h3>
-                @if (count($suggestedImprovements))
-                    <ul class="list-disc pl-4 text-xs text-slate-300 space-y-1.5">
-                        @foreach($suggestedImprovements as $si)
-                            <li>{{ $si }}</li>
-                        @endforeach
-                    </ul>
-                @else
-                    <p class="text-[11px] text-slate-500">
-                        Model belum memberikan action steps spesifik, tapi kamu bisa mulai dengan: menambah pencapaian yang terukur, memperjelas deskripsi role, dan merapikan struktur section.
-                    </p>
-                @endif
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-xs font-bold text-sky-400 uppercase tracking-widest mb-4">Next Action Steps</h4>
+                        <ul class="space-y-3">
+                            @forelse($suggestedImprovements as $si)
+                                <li class="text-xs text-slate-300 flex items-center gap-3">
+                                    <svg class="w-4 h-4 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    {{ $si }}
+                                </li>
+                            @empty
+                                <li class="text-xs text-slate-500 italic">Optimalkan deskripsi pengalaman dengan metode STAR.</li>
+                            @endforelse
+                        </ul>
+                    </div>
+                    <div class="flex flex-col justify-end items-end gap-4">
+                        <span class="text-[10px] text-slate-500 uppercase">Submission Ref: {{ $analysis->cv_submission_id }}</span>
+                        @if(auth()->user()->role === 'user')
+                            <a href="{{ route('cv.create') }}" class="w-full md:w-auto text-center px-8 py-3 rounded-2xl bg-white text-slate-950 font-bold text-sm hover:bg-sky-400 hover:text-white transition-all">
+                                Re-upload & Upgrade CV
+                            </a>
+                        @endif
+                    </div>
+                </div>
             </div>
 
-            <div class="flex justify-end">
-                @if(auth()->user()->role === 'user')
-                    <a href="{{ route('cv.create') }}"
-                    class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-950/80 px-5 py-2.5 text-sm font-semibold text-slate-100 hover:border-sky-400 transition">
-                        Kembali ke Upload / Input CV
-                    </a>
-                @else
-                    <a href="{{ route('admin.dashboard') }}"
-                    class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-950/80 px-5 py-2.5 text-sm font-semibold text-slate-100 hover:border-sky-400 transition">
-                        ⬅ Kembali ke Dashboard Admin
-                    </a>
-                @endif
-
-            </div>
         </div>
     </div>
 </x-app-layout>

@@ -1,375 +1,179 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>CareerLens.AI - Smart CV Analysis</title>
         
-        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
         
-        @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-            @vite(['resources/css/app.css', 'resources/js/app.js'])
-        @else
-            {{-- Include your Tailwind CSS here --}}
-        @endif
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <style>
+            @keyframes float {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+                100% { transform: translateY(0px); }
+            }
+            .animate-float { animation: float 3s ease-in-out infinite; }
+            .glass-nav { backdrop-filter: blur(12px); background-color: rgba(15, 23, 42, 0.8); }
+        </style>
     </head>
-    <body class="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100">
+    <body class="min-h-screen bg-slate-950 text-slate-100 selection:bg-sky-500/30">
         
-        {{-- Header Navigation --}}
-        @if (Route::has('login'))
-            <header class="w-full max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                <nav class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="h-8 w-8 rounded-lg bg-gradient-to-br from-sky-400 to-cyan-300 flex items-center justify-center">
+        {{-- Sticky Navbar --}}
+        <header class="fixed top-0 w-full z-50 border-b border-slate-800/50 glass-nav">
+            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-20">
+                    <div class="flex items-center gap-2 group cursor-pointer">
+                        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-sky-400 to-cyan-300 flex items-center justify-center group-hover:rotate-12 transition-transform shadow-lg shadow-sky-500/20">
                             <svg class="h-5 w-5 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </div>
-                        <span class="text-lg font-semibold text-slate-100">CareerLens<span class="text-sky-400">.AI</span></span>
+                        <span class="text-xl font-bold tracking-tight text-white">CareerLens<span class="text-sky-400">.AI</span></span>
+                    </div>
+
+                    <div class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+                        <a href="#features" class="hover:text-sky-400 transition-colors">Fitur</a>
+                        <a href="#how-it-works" class="hover:text-sky-400 transition-colors">Cara Kerja</a>
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <div class="flex flex-wrap justify-center gap-4">
-                                @auth
-                                    @if(auth()->user()->role === 'user')
-                                        <a href="{{ route('cv.create') }}"
-                                        class="inline-flex items-center justify-center rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-sky-400 transition-all">
-                                            Upload CV Sekarang
-                                        </a>
-
-                                        <a href="{{ route('cv.history') }}"
-                                        class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-900/50 px-8 py-3 text-base font-semibold text-slate-200 hover:border-sky-400 transition-all">
-                                            Lihat History
-                                        </a>
-                                    @elseif(auth()->user()->role === 'admin')
-                                        <a href="{{ route('admin.dashboard') }}"
-                                        class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-emerald-400 transition-all">
-                                            Masuk Dashboard Admin
-                                        </a>
-                                    @endif
-                                @else
-                                    {{-- GUEST --}}
-                                    <a href="{{ route('register') }}"
-                                    class="inline-flex items-center justify-center rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-sky-400 transition-all">
-                                        Daftar
-                                    </a>
-
-                                    <a href="{{ route('login') }}"
-                                    class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-900/50 px-8 py-3 text-base font-semibold text-slate-200 hover:border-sky-400 transition-all">
-                                        Login
-                                    </a>
-                                @endauth
-                            </div>
+                        @auth
+                            <a href="{{ route('dashboard') }}" class="px-5 py-2.5 rounded-full bg-slate-800 text-sm font-semibold hover:bg-slate-700 transition-all border border-slate-700">Dashboard</a>
+                        @else
+                            <a href="{{ route('login') }}" class="text-sm font-semibold text-slate-300 hover:text-white transition-colors">Login</a>
+                            <a href="{{ route('register') }}" class="px-6 py-2.5 rounded-full bg-sky-500 text-sm font-semibold text-white shadow-lg shadow-sky-500/20 hover:bg-sky-400 hover:-translate-y-0.5 transition-all">Daftar Gratis</a>
+                        @endauth
                     </div>
-                </nav>
-            </header>
-        @endif
+                </div>
+            </nav>
+        </header>
 
-        {{-- Main Content --}}
-        <div class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-            
-            {{-- Hero Section --}}
-            <div class="text-center mb-20">
-                <div class="relative overflow-hidden rounded-3xl border border-slate-700/70 bg-gradient-to-br from-slate-900 to-slate-900/40 p-16 shadow-2xl shadow-slate-950/60 mb-12">
-                    <div class="absolute inset-0 pointer-events-none opacity-40"
-                         style="background: radial-gradient(circle at 50% 0, rgba(56,189,248,.25), transparent 70%);">
+        <main class="pt-32 pb-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                {{-- Hero Section --}}
+                <div class="text-center mb-24 relative">
+                    {{-- Decorative Glow --}}
+                    <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-sky-500/20 blur-[120px] rounded-full pointer-events-none"></div>
+
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-bold tracking-widest uppercase mb-8 animate-float">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                        </span>
+                        New: AI Model v2.4 Is Live
                     </div>
+
+                    <h1 class="text-5xl md:text-7xl font-extrabold text-white tracking-tight mb-8 leading-[1.1]">
+                        Ubah CV-mu Menjadi <br/>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-cyan-300 to-emerald-400">Magnet Karir</span>
+                    </h1>
                     
-                    <div class="relative">
-                        {{-- Logo/Icon --}}
-                        <div class="flex justify-center mb-6">
-                            <div class="h-20 w-20 rounded-2xl bg-gradient-to-br from-sky-400 via-cyan-300 to-emerald-300 flex items-center justify-center shadow-2xl shadow-sky-500/50">
-                                <svg class="h-11 w-11 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
+                    <p class="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                        Analisis CV cerdas berbasis AI untuk membedah potensi terbaikmu dan mencocokkannya dengan divisi impian dalam hitungan detik.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <a href="{{ route('register') }}" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-sky-500 text-lg font-bold text-white shadow-2xl shadow-sky-500/30 hover:bg-sky-400 hover:scale-105 transition-all">
+                            Mulai Analisis Sekarang — Gratis
+                        </a>
+                    </div>
+
+                    {{-- Hero Image/Preview placeholder --}}
+                    <div class="mt-20 relative max-w-5xl mx-auto group">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-sky-500 to-emerald-500 rounded-[2rem] blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                        <div class="relative bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
+                            <div class="flex items-center gap-2 px-6 py-4 border-b border-slate-800 bg-slate-900/50">
+                                <div class="flex gap-1.5">
+                                    <div class="w-3 h-3 rounded-full bg-rose-500/50"></div>
+                                    <div class="w-3 h-3 rounded-full bg-amber-500/50"></div>
+                                    <div class="w-3 h-3 rounded-full bg-emerald-500/50"></div>
+                                </div>
+                                <div class="mx-auto text-xs text-slate-500 font-medium tracking-widest uppercase">AI Analysis Dashboard Preview</div>
                             </div>
-                        </div>
-
-                        <h1 class="text-5xl font-bold text-slate-50 mb-4">
-                            Welcome to <span class="bg-gradient-to-r from-sky-400 to-cyan-300 bg-clip-text text-transparent">CareerLens.AI</span>
-                        </h1>
-                        <p class="text-lg text-slate-300 max-w-3xl mx-auto mb-8">
-                            Analisis CV cerdas berbasis AI untuk membantu kamu menemukan divisi yang paling cocok dengan skill dan pengalamanmu.
-                        </p>
-
-                        <div class="flex flex-wrap justify-center gap-4">
-                           @auth
-                                @if(auth()->user()->role === 'user')
-                                    <a href="{{ route('cv.create') }}"
-                                    class="inline-flex items-center justify-center rounded-full bg-sky-500 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-sky-400 transition-all">
-                                        Upload CV Sekarang
-                                    </a>
-
-                                    <a href="{{ route('cv.history') }}"
-                                    class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-900/50 px-8 py-3 text-base font-semibold text-slate-200 hover:border-sky-400 transition-all">
-                                        Lihat History
-                                    </a>
-                                @else
-                                    <a href="{{ route('admin.dashboard') }}"
-                                    class="inline-flex items-center justify-center rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white shadow-lg hover:bg-emerald-400 transition-all">
-                                        Masuk Dashboard Admin
-                                    </a>
-                                @endif
-                            @endauth
-
+                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80" alt="Dashboard Preview" class="w-full opacity-60 mix-blend-luminosity hover:opacity-100 transition-opacity duration-700">
                         </div>
                     </div>
                 </div>
 
                 {{-- Stats --}}
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60">
-                        <div class="text-3xl font-bold text-sky-400 mb-2">95%</div>
-                        <div class="text-sm text-slate-300">Akurasi Analisis</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mb-32">
+                    @foreach([['95%', 'Akurasi AI'], ['10k+', 'User Terdaftar'], ['<30s', 'Waktu Analisis'], ['24/7', 'Akses Kapanpun']] as $stat)
+                    <div class="p-8 rounded-3xl bg-slate-900/40 border border-slate-800/50 text-center hover:border-slate-700 transition-colors group">
+                        <div class="text-3xl font-black text-white mb-1 group-hover:text-sky-400 transition-colors">{{ $stat[0] }}</div>
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-widest">{{ $stat[1] }}</div>
                     </div>
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60">
-                        <div class="text-3xl font-bold text-emerald-400 mb-2">10K+</div>
-                        <div class="text-sm text-slate-300">CV Teranalisis</div>
-                    </div>
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60">
-                        <div class="text-3xl font-bold text-cyan-400 mb-2">&lt;30s</div>
-                        <div class="text-sm text-slate-300">Waktu Analisis</div>
-                    </div>
+                    @endforeach
                 </div>
+
+                {{-- Features --}}
+                <section id="features" class="mb-32">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl font-bold text-white mb-4">Fitur Terintegrasi</h2>
+                        <p class="text-slate-400">Teknologi yang dirancang untuk mempercepat karirmu.</p>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-8">
+                        {{-- Kartu Fitur bisa menggunakan komponen yang sama dengan iterasi warna --}}
+                        <div class="p-8 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-sky-500/50 transition-all group">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-3">Instant ATS Scoring</h3>
+                            <p class="text-slate-400 text-sm leading-relaxed">Cek skor CV kamu terhadap standar sistem ATS industri modern dalam hitungan detik.</p>
+                        </div>
+                        {{-- Tambahkan fitur lainnya di sini --}}
+                    </div>
+                </section>
+
+                {{-- How It Works dengan Visual Line --}}
+                <section id="how-it-works" class="mb-32 relative">
+                    <div class="text-center mb-16">
+                        <h2 class="text-3xl font-bold text-white mb-4">Cara Kerja</h2>
+                    </div>
+                    <div class="grid md:grid-cols-3 gap-12 relative">
+                        {{-- Garis penghubung (Desktop saja) --}}
+                        <div class="hidden md:block absolute top-12 left-[15%] right-[15%] h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent"></div>
+                        
+                        @php $steps = [
+                            ['1', 'Upload', 'Unggah file PDF CV kamu ke sistem kami.'],
+                            ['2', 'Analyze', 'AI kami membedah setiap kalimat & skill.'],
+                            ['3', 'Excel', 'Terima rekomendasi & mulai melamar!']
+                        ] @endphp
+
+                        @foreach($steps as $step)
+                        <div class="text-center relative">
+                            <div class="w-24 h-24 rounded-full bg-slate-900 border-4 border-slate-800 flex items-center justify-center mx-auto mb-6 relative z-10 shadow-xl group-hover:border-sky-500 transition-colors">
+                                <span class="text-2xl font-black text-sky-400">{{ $step[0] }}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2">{{ $step[1] }}</h3>
+                            <p class="text-slate-400 text-sm">{{ $step[2] }}</p>
+                        </div>
+                        @endforeach
+                    </div>
+                </section>
+
             </div>
-
-            {{-- Features Section --}}
-            <div class="mb-20">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-slate-50 mb-4">
-                        Fitur Unggulan
-                    </h2>
-                    <p class="text-slate-400 max-w-2xl mx-auto">
-                        Teknologi AI canggih untuk memberikan insight terbaik dari CV kamu
-                    </p>
-                </div>
-
-                <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    
-                    {{-- Feature 1: AI Analysis --}}
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60 hover:border-sky-500/50 transition-all">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/20 border border-sky-500/30">
-                                    <svg class="h-6 w-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-slate-200 mb-2">
-                                    Analisis AI Cerdas
-                                </h3>
-                                <p class="text-sm text-slate-400">
-                                    Menggunakan teknologi AI untuk menganalisis skill, pengalaman, dan potensi kamu secara mendalam.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Feature 2: Division Match --}}
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60 hover:border-emerald-500/50 transition-all">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-500/30">
-                                    <svg class="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-slate-200 mb-2">
-                                    Rekomendasi Divisi
-                                </h3>
-                                <p class="text-sm text-slate-400">
-                                    Dapatkan rekomendasi divisi yang paling cocok dengan profile dan skill set kamu.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Feature 3: Skill Gap --}}
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60 hover:border-cyan-500/50 transition-all">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/20 border border-cyan-500/30">
-                                    <svg class="h-6 w-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-slate-200 mb-2">
-                                    Skill Gap Analysis
-                                </h3>
-                                <p class="text-sm text-slate-400">
-                                    Identifikasi skill yang perlu dikembangkan untuk meningkatkan peluang diterima.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Feature 4: ATS Score --}}
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60 hover:border-violet-500/50 transition-all">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-violet-500/20 border border-violet-500/30">
-                                    <svg class="h-6 w-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-slate-200 mb-2">
-                                    ATS Compatibility
-                                </h3>
-                                <p class="text-sm text-slate-400">
-                                    Cek seberapa siap CV kamu untuk sistem ATS (Applicant Tracking System).
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Feature 5: Detailed Feedback --}}
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60 hover:border-amber-500/50 transition-all">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/20 border border-amber-500/30">
-                                    <svg class="h-6 w-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-slate-200 mb-2">
-                                    Feedback Detail
-                                </h3>
-                                <p class="text-sm text-slate-400">
-                                    Dapatkan feedback spesifik tentang kekuatan dan area yang perlu ditingkatkan.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Feature 6: Compare --}}
-                    <div class="rounded-2xl border border-slate-700/70 bg-slate-900/70 p-6 shadow-lg shadow-slate-950/60 hover:border-rose-500/50 transition-all">
-                        <div class="flex items-start gap-4">
-                            <div class="flex-shrink-0">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/20 border border-rose-500/30">
-                                    <svg class="h-6 w-6 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <h3 class="text-base font-semibold text-slate-200 mb-2">
-                                    Compare Versions
-                                </h3>
-                                <p class="text-sm text-slate-400">
-                                    Bandingkan berbagai versi CV kamu untuk melihat perkembangan dan improvement.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            {{-- How It Works Section --}}
-            <div class="mb-20">
-                <div class="text-center mb-12">
-                    <h2 class="text-3xl font-bold text-slate-50 mb-4">
-                        Cara Kerja
-                    </h2>
-                    <p class="text-slate-400 max-w-2xl mx-auto">
-                        Tiga langkah mudah untuk mendapatkan analisis CV profesional
-                    </p>
-                </div>
-
-                <div class="grid gap-8 md:grid-cols-3">
-                    <div class="text-center">
-                        <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-cyan-300 text-slate-900 font-bold text-xl mb-4 shadow-lg shadow-sky-500/50">
-                            1
-                        </div>
-                        <h3 class="text-lg font-semibold text-slate-200 mb-2">Upload CV</h3>
-                        <p class="text-sm text-slate-400">
-                            Upload file CV kamu dalam format PDF, DOCX, atau input manual
-                        </p>
-                    </div>
-
-                    <div class="text-center">
-                        <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-cyan-300 text-slate-900 font-bold text-xl mb-4 shadow-lg shadow-emerald-500/50">
-                            2
-                        </div>
-                        <h3 class="text-lg font-semibold text-slate-200 mb-2">AI Analysis</h3>
-                        <p class="text-sm text-slate-400">
-                            AI kami akan menganalisis skill, pengalaman, dan kesesuaian divisi
-                        </p>
-                    </div>
-
-                    <div class="text-center">
-                        <div class="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-cyan-300 text-slate-900 font-bold text-xl mb-4 shadow-lg shadow-violet-500/50">
-                            3
-                        </div>
-                        <h3 class="text-lg font-semibold text-slate-200 mb-2">Get Insights</h3>
-                        <p class="text-sm text-slate-400">
-                            Terima hasil analisis lengkap dengan rekomendasi dan actionable feedback
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- CTA Section --}}
-            <div class="relative overflow-hidden rounded-3xl border border-sky-500/50 bg-gradient-to-br from-sky-900/40 to-slate-900/40 p-12 text-center shadow-2xl shadow-sky-900/60">
-                <div class="absolute inset-0 pointer-events-none opacity-30"
-                     style="background: radial-gradient(circle at 50% 50%, rgba(56,189,248,.4), transparent 70%);">
-                </div>
-                
-                <div class="relative">
-                    <h2 class="text-3xl font-bold text-slate-50 mb-4">
-                        Siap Menganalisis CV Kamu?
-                    </h2>
-                    <p class="text-slate-300 mb-8 max-w-2xl mx-auto">
-                        Dapatkan insight profesional tentang CV kamu dalam hitungan detik. Gratis dan mudah digunakan.
-                    </p>
-                    
-                    @auth
-                        @if(auth()->user()->role === 'user')
-                            <a href="{{ route('cv.create') }}"
-                            class="inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-base font-semibold text-slate-900 shadow-lg hover:bg-slate-100 transition-all">
-                                Mulai Analisis CV
-                            </a>
-                        @else
-                            <a href="{{ route('admin.dashboard') }}"
-                            class="inline-flex items-center justify-center rounded-full bg-white px-8 py-3 text-base font-semibold text-slate-900 shadow-lg hover:bg-slate-100 transition-all">
-                                Buka Dashboard Admin
-                            </a>
-                        @endif
-                    @endauth
-
-                </div>
-            </div>
-
-        </div>
+        </main>
 
         {{-- Footer --}}
-        <footer class="border-t border-slate-800 mt-20">
-            <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-2">
-                        <div class="h-6 w-6 rounded-lg bg-gradient-to-br from-sky-400 to-cyan-300 flex items-center justify-center">
-                            <svg class="h-4 w-4 text-slate-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <span class="text-sm font-semibold text-slate-300">CareerLens<span class="text-sky-400">.AI</span></span>
-                    </div>
-                    
-                    <p class="text-xs text-slate-500">
-                        © {{ date('Y') }} CareerLens.AI. Powered by AI Technology.
-                    </p>
+        <footer class="border-t border-slate-900 pt-16 pb-8 bg-slate-950">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <div class="flex items-center justify-center gap-2 mb-8">
+                    <div class="h-8 w-8 rounded-lg bg-sky-500 flex items-center justify-center font-bold text-slate-900">C</div>
+                    <span class="text-lg font-bold">CareerLens<span class="text-sky-400">.AI</span></span>
+                </div>
+                <p class="text-slate-500 text-sm mb-8">Empowering professionals with AI-driven career insights.</p>
+                <div class="flex justify-center gap-6 text-slate-400 text-sm mb-12">
+                    <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-white transition-colors">Terms of Service</a>
+                    <a href="#" class="hover:text-white transition-colors">Contact</a>
+                </div>
+                <div class="text-slate-600 text-xs tracking-widest uppercase">
+                    © {{ date('Y') }} CareerLens.AI — Build with ❤️ in Indonesia
                 </div>
             </div>
         </footer>
